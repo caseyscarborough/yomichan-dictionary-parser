@@ -1,4 +1,4 @@
-package yomichan.model.term.v3;
+package yomichan.model.v3.term;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package yomichan.model.tag.v3;
+package yomichan.model.v3;
 
 import lombok.Getter;
 import lombok.Setter;

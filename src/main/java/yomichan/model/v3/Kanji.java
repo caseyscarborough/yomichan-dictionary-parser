@@ -1,4 +1,4 @@
-package yomichan.model.kanji.v3;
+package yomichan.model.v3;
 
 import lombok.Data;
 

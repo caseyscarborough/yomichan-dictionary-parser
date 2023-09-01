@@ -6,13 +6,13 @@ import org.junit.jupiter.api.Test;
 import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
-import yomichan.model.kanji.v3.Kanji;
-import yomichan.model.tag.v3.Tag;
-import yomichan.model.term.v3.Content;
-import yomichan.model.term.v3.ContentType;
-import yomichan.model.term.v3.HtmlTag;
-import yomichan.model.term.v3.StructuredContent;
-import yomichan.model.term.v3.Term;
+import yomichan.model.v3.Kanji;
+import yomichan.model.v3.Tag;
+import yomichan.model.v3.term.Content;
+import yomichan.model.v3.term.ContentType;
+import yomichan.model.v3.term.HtmlTag;
+import yomichan.model.v3.term.StructuredContent;
+import yomichan.model.v3.Term;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -69,7 +69,7 @@ class YomichanParserTest {
     @Test
     void testParseKanji() {
         for (File file : getFiles((dir, name) -> name.startsWith("kanji_bank"))) {
-            final List<yomichan.model.kanji.v3.Kanji> kanji = parser.parseKanjis(file.getAbsolutePath());
+            final List<Kanji> kanji = parser.parseKanjis(file.getAbsolutePath());
             assertFalse(kanji.isEmpty());
         }
     }

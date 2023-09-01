@@ -1,8 +1,9 @@
-package yomichan.model.term.v3;
+package yomichan.model.v3;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import yomichan.model.v3.term.Content;
 
 import java.util.ArrayList;
 import java.util.List;
