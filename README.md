@@ -219,5 +219,5 @@ or the [`Tag` class](https://github.com/caseyscarborough/yomichan-dictionary-par
 - [x] Implement `tag_bank.json` files
 - [ ] Implement `meta_bank.json` files
 - [ ] Implement `kanji_bank.json` files for version 1
-- [ ] Implement `kanji_bank.json` files for version 3
+- [x] Implement `kanji_bank.json` files for version 3
 - [ ] Implement `kanji_meta_bank.json` files for version 3

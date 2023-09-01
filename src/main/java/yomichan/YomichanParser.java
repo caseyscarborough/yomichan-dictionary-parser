@@ -8,6 +8,8 @@ import net.lingala.zip4j.ZipFile;
 import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
+import yomichan.model.YomichanDictionaryType;
+import yomichan.model.kanji.v3.Kanji;
 import yomichan.model.tag.v3.Tag;
 import yomichan.model.term.v3.Appearance;
 import yomichan.model.term.v3.Content;
@@ -39,6 +41,7 @@ import static yomichan.utils.JsonUtils.getBoolean;
 import static yomichan.utils.JsonUtils.getDouble;
 import static yomichan.utils.JsonUtils.getInt;
 import static yomichan.utils.JsonUtils.getText;
+import static yomichan.utils.JsonUtils.toMap;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -72,11 +75,16 @@ public class YomichanParser {
                 // Only parse the first index file.
                 break;
             }
-            for (File term : getFiles(tmp, (dir, name) -> name.startsWith("term_bank"))) {
-                dictionary.getTerms().addAll(parseTerms(term));
-            }
             for (File tag : getFiles(tmp, (dir, name) -> name.startsWith("tag_bank"))) {
                 dictionary.getTags().addAll(parseTags(tag));
+            }
+            for (File term : getFiles(tmp, (dir, name) -> name.startsWith("term_bank"))) {
+                dictionary.getTerms().addAll(parseTerms(term));
+                dictionary.setType(YomichanDictionaryType.TERM);
+            }
+            for (File kanji : getFiles(tmp, (dir, name) -> name.startsWith("kanji_bank"))) {
+                dictionary.getKanjis().addAll(parseKanjis(kanji));
+                dictionary.setType(YomichanDictionaryType.KANJI);
             }
 
             log.debug("Successfully parsed Yomichan dictionary in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
@@ -134,6 +142,45 @@ public class YomichanParser {
     public Index parseIndex(String path) {
         final File file = getFile(path);
         return parseIndex(file);
+    }
+
+    /**
+     * Parses the Yomichan kanji_bank.json file.
+     *
+     * @param file The kanji_bank.json file.
+     * @return The list of Kanji.
+     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-kanji-bank-v3-schema.json">Yomichan Kanji Bank v3 Schema</a>
+     * @see Kanji
+     */
+    public List<Kanji> parseKanjis(File file) {
+        try {
+            final JsonNode node = mapper.readTree(file);
+            if (!node.isArray()) {
+                throw new YomichanException("Yomichan kanji bank should be an array.");
+            }
+
+            log.info("Parsing Yomichan kanji bank at path {}", file.getAbsolutePath());
+            final long start = System.nanoTime();
+            List<Kanji> kanji = new ArrayList<>();
+            node.forEach(n -> kanji.add(parseKanji(n)));
+            log.debug("Successfully parsed {} kanji in {}ms", kanji.size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+            return kanji;
+        } catch (IOException e) {
+            throw new YomichanException("Failed to parse Yomichan kanji bank at path " + file.getAbsolutePath(), e);
+        }
+    }
+
+    /**
+     * Parses the Yomichan kanji_bank.json file.
+     *
+     * @param path The path to the kanji_bank.json file.
+     * @return The list of Kanji.
+     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-kanji-bank-v3-schema.json">Yomichan Kanji Bank v3 Schema</a>
+     * @see Kanji
+     */
+    public List<Kanji> parseKanjis(String path) {
+        final File file = getFile(path);
+        return parseKanjis(file);
     }
 
     /**
@@ -224,12 +271,12 @@ public class YomichanParser {
             switch (i) {
                 case 0 -> term.setTerm(getText(item));
                 case 1 -> term.setReading(getText(item));
-                case 2 -> term.setDefinitionTags(parseTags(item));
-                case 3 -> term.setRules(parseTags(item));
+                case 2 -> term.setDefinitionTags(parseSpaceSeparatedText(item));
+                case 3 -> term.setRules(parseSpaceSeparatedText(item));
                 case 4 -> term.setScore(getInt(item));
                 case 5 -> term.setContents(parseContents(item));
                 case 6 -> term.setSequenceNumber(getInt(item));
-                case 7 -> term.setTermTags(parseTags(item));
+                case 7 -> term.setTermTags(parseSpaceSeparatedText(item));
                 default ->
                     throw new YomichanException("Couldn't parse term due to invalid length. Yomichan term array should be 8 items long: " + node);
             }
@@ -257,6 +304,28 @@ public class YomichanParser {
         return tag;
     }
 
+    private Kanji parseKanji(JsonNode node) {
+        if (!node.isArray()) {
+            throw new YomichanException("Yomichan kanji bank array items should be an array.");
+        }
+
+        final Kanji kanji = new Kanji();
+        for (int i = 0; i < node.size(); i++) {
+            JsonNode item = node.get(i);
+            switch (i) {
+                case 0 -> kanji.setCharacter(getText(item));
+                case 1 -> kanji.setOnyomi(parseSpaceSeparatedText(item));
+                case 2 -> kanji.setKunyomi(parseSpaceSeparatedText(item));
+                case 3 -> kanji.setTags(parseSpaceSeparatedText(item));
+                case 4 -> kanji.setMeanings(parseStringArray(item));
+                case 5 -> kanji.setStats(toMap(item));
+                default ->
+                    throw new YomichanException("Couldn't parse kanji due to invalid length. Yomichan kanji array should be 6 items long: " + node);
+            }
+        }
+        return kanji;
+    }
+
     private File getFile(final String path) {
         final File file = new File(path);
         if (!file.exists()) {
@@ -265,7 +334,16 @@ public class YomichanParser {
         return file;
     }
 
-    private List<String> parseTags(JsonNode node) {
+    private List<String> parseStringArray(JsonNode node) {
+        if (!node.isArray()) {
+            throw new YomichanException("Cannot parse string array from non-array node: " + node);
+        }
+        final List<String> output = new ArrayList<>();
+        node.forEach(n -> output.add(n.asText()));
+        return output;
+    }
+
+    private List<String> parseSpaceSeparatedText(JsonNode node) {
         return Arrays.stream(node.asText().split(" "))
             .filter(s -> !s.isBlank())
             .toList();

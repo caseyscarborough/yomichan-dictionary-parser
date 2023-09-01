@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
+import yomichan.model.kanji.v3.Kanji;
 import yomichan.model.tag.v3.Tag;
 import yomichan.model.term.v3.Content;
 import yomichan.model.term.v3.ContentType;
@@ -66,12 +67,23 @@ class YomichanParserTest {
     }
 
     @Test
+    void testParseKanji() {
+        for (File file : getFiles((dir, name) -> name.startsWith("kanji_bank"))) {
+            final List<yomichan.model.kanji.v3.Kanji> kanji = parser.parseKanjis(file.getAbsolutePath());
+            assertFalse(kanji.isEmpty());
+        }
+    }
+
+    @Test
     void testParseDictionary() {
         for (File file : getFiles((dir, name) -> name.endsWith(".zip"))) {
             final YomichanDictionary dictionary = parser.parseDictionary(file.getAbsolutePath());
             assertNotNull(dictionary);
             assertNotNull(dictionary.getIndex());
-            assertFalse(dictionary.getTerms().isEmpty());
+            switch (dictionary.getType()) {
+                case TERM -> assertFalse(dictionary.getTerms().isEmpty());
+                case KANJI -> assertFalse(dictionary.getKanjis().isEmpty());
+            }
         }
     }
 
@@ -171,6 +183,24 @@ class YomichanParserTest {
         assertEquals("⭐", term.getTermTags().get(0));
         assertEquals("ichi", term.getTermTags().get(1));
         assertEquals("news19k", term.getTermTags().get(2));
+    }
+
+    @Test
+    void parseSingleKanji() {
+        File file = new File(FILES_ROOT + "/kanji_bank_1.json");
+        final List<Kanji> kanjis = parser.parseKanjis(file);
+        assertFalse(kanjis.isEmpty());
+        assertEquals(351, kanjis.size());
+        Kanji kanji = kanjis.get(0);
+        assertEquals("亜", kanji.getCharacter());
+        assertEquals("ア", kanji.getOnyomi().get(0));
+        assertEquals("つ.ぐ", kanji.getKunyomi().get(0));
+        assertEquals("jouyou", kanji.getTags().get(0));
+        assertEquals(4, kanji.getMeanings().size());
+        assertEquals("Asia", kanji.getMeanings().get(0));
+        assertEquals("3273", kanji.getStats().get("deroo"));
+        assertEquals("1010.6", kanji.getStats().get("four_corner"));
+        assertEquals("1509", kanji.getStats().get("freq"));
     }
 
     @Test

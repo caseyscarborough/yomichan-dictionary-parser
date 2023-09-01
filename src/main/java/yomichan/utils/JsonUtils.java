@@ -3,6 +3,10 @@ package yomichan.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NoArgsConstructor;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 @NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 public class JsonUtils {
 
@@ -71,5 +75,19 @@ public class JsonUtils {
             return defaultValue;
         }
         return field.asInt();
+    }
+
+    public static Map<String, String> toMap(JsonNode node) {
+        if (!node.isObject()) {
+            throw new IllegalStateException("Can only convert JSON object to map!");
+        }
+
+        Map<String, String> output = new HashMap<>();
+        final Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+        while (fields.hasNext()) {
+            final Map.Entry<String, JsonNode> field = fields.next();
+            output.put(field.getKey(), field.getValue().asText());
+        }
+        return output;
     }
 }
