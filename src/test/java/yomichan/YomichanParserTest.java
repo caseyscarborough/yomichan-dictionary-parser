@@ -8,11 +8,14 @@ import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
 import yomichan.model.v3.Kanji;
 import yomichan.model.v3.Tag;
+import yomichan.model.v3.Term;
+import yomichan.model.v3.TermMeta;
 import yomichan.model.v3.term.Content;
 import yomichan.model.v3.term.ContentType;
 import yomichan.model.v3.term.HtmlTag;
 import yomichan.model.v3.term.StructuredContent;
-import yomichan.model.v3.Term;
+import yomichan.model.v3.term.meta.Frequency;
+import yomichan.model.v3.term.meta.Pitches;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -83,6 +86,14 @@ class YomichanParserTest {
             switch (dictionary.getType()) {
                 case TERM -> assertFalse(dictionary.getTerms().isEmpty());
                 case KANJI -> assertFalse(dictionary.getKanjis().isEmpty());
+                case PITCH -> {
+                    assertFalse(dictionary.getTermMetas().isEmpty());
+                    dictionary.getTermMetas().forEach(meta -> assertEquals(TermMeta.Type.PITCH, meta.getType()));
+                }
+                case FREQUENCY -> {
+                    assertFalse(dictionary.getTermMetas().isEmpty());
+                    dictionary.getTermMetas().forEach(meta -> assertEquals(TermMeta.Type.FREQUENCY, meta.getType()));
+                }
             }
         }
     }
@@ -201,6 +212,35 @@ class YomichanParserTest {
         assertEquals("3273", kanji.getStats().get("deroo"));
         assertEquals("1010.6", kanji.getStats().get("four_corner"));
         assertEquals("1509", kanji.getStats().get("freq"));
+    }
+
+    @Test
+    void testParsingSingleTermMetaForPitches() {
+        File file = new File(FILES_ROOT + "/term_meta_bank_2.json");
+        final List<TermMeta> metas = parser.parseTermMetas(file);
+        assertFalse(metas.isEmpty());
+        assertEquals(510, metas.size());
+        final TermMeta meta = metas.get(1);
+        assertEquals(TermMeta.Type.PITCH, meta.getType());
+        assertEquals("積雪地帯", meta.getText());
+        final Pitches pitches = meta.getPitches();
+        assertEquals("せきせつちたい", pitches.getReading());
+        assertEquals(1, pitches.getPitches().size());
+        assertEquals(5, pitches.getPitches().get(0).getDownstep());
+    }
+
+    @Test
+    void testParsingSingleTermMetaForFrequency() {
+        File file = new File(FILES_ROOT + "/term_meta_bank_1.json");
+        final List<TermMeta> metas = parser.parseTermMetas(file);
+        assertFalse(metas.isEmpty());
+        assertEquals(156, metas.size());
+        final TermMeta meta = metas.get(0);
+        assertEquals(TermMeta.Type.FREQUENCY, meta.getType());
+        assertEquals("の", meta.getText());
+        final Frequency frequency = meta.getFrequency();
+        assertEquals(1, frequency.getValue());
+        assertEquals("1㋕", frequency.getDisplay());
     }
 
     @Test

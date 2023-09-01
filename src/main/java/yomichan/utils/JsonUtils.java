@@ -2,9 +2,13 @@ package yomichan.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.NoArgsConstructor;
+import yomichan.exception.YomichanException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 @NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
@@ -89,5 +93,41 @@ public class JsonUtils {
             output.put(field.getKey(), field.getValue().asText());
         }
         return output;
+    }
+
+    public static List<String> parseStringArray(JsonNode node) {
+        if (node == null) {
+            return null;
+        }
+        if (!node.isArray()) {
+            throw new YomichanException("Cannot parse string array from non-array node: " + node);
+        }
+        final List<String> output = new ArrayList<>();
+        node.forEach(n -> output.add(getText(n)));
+        return output;
+    }
+
+    public static List<Integer> parseIntegerArray(JsonNode node) {
+        if (node == null) {
+            return null;
+        }
+        if (!node.isArray()) {
+            throw new YomichanException("Cannot parse integer array from non-array node: " + node);
+        }
+        final List<Integer> output = new ArrayList<>();
+        node.forEach(n -> output.add(getInt(n)));
+        return output;
+    }
+
+    public static List<String> parseSpaceSeparatedText(JsonNode node) {
+        if (node == null) {
+            return null;
+        }
+        if (!node.isTextual()) {
+            throw new YomichanException("Cannot parse space separated text from non-text node: " + node);
+        }
+        return Arrays.stream(node.asText().split(" "))
+            .filter(s -> !s.isBlank())
+            .toList();
     }
 }
