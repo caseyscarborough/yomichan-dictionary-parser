@@ -51,10 +51,10 @@ class YomichanDictionaryParser implements IYomichanParser<YomichanDictionary> {
             // Parse the index, term_bank, and tag_bank JSON files.
             final YomichanDictionary dictionary = new YomichanDictionary();
             this.<Index>parse(dir, INDEX).stream().findFirst().ifPresent(dictionary::setIndex);
-            this.<List<Kanji>>parse(dir, KANJI).forEach(kanji -> dictionary.getKanjis().addAll(kanji));
-            this.<List<Term>>parse(dir, TERM).forEach(term -> dictionary.getTerms().addAll(term));
-            this.<List<Tag>>parse(dir, TAG).forEach(tag -> dictionary.getTags().addAll(tag));
-            this.<List<TermMetadata>>parse(dir, TERM_META).forEach(termMeta -> dictionary.getTermMetadata().addAll(termMeta));
+            this.<List<Kanji>>parse(dir, KANJI).forEach(dictionary.getKanjis()::addAll);
+            this.<List<Term>>parse(dir, TERM).forEach(dictionary.getTerms()::addAll);
+            this.<List<Tag>>parse(dir, TAG).forEach(dictionary.getTags()::addAll);
+            this.<List<TermMetadata>>parse(dir, TERM_META).forEach(dictionary.getTermMetadata()::addAll);
 
             log.debug("Successfully parsed Yomichan {} dictionary {} in {}ms", dictionary.getType() != null ? dictionary.getType().getName() : "[Unknown]", zip.getFile().getName(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
             return dictionary;

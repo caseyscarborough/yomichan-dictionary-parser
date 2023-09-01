@@ -81,7 +81,6 @@ class YomichanTermParser implements IYomichanParser<List<Term>> {
         return term;
     }
 
-
     private List<Content> parseContents(JsonNode node) {
         final List<Content> output = new ArrayList<>();
         node.forEach(n -> output.add(parseContent(n)));
