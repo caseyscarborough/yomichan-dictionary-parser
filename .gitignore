@@ -37,3 +37,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Ignore Yomichan dictionary and JSON files used for testing
+src/test/resources/yomichan
