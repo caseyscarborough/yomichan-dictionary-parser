@@ -31,7 +31,7 @@ public class Content {
      * Link tag - "a"
      * (Required)
      */
-    private List<StructuredContent> content = new ArrayList<>();
+    private List<StructuredContent> contents = new ArrayList<>();
     /**
      * Path to the image file in the archive.
      * (Required)

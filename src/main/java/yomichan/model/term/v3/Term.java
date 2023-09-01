@@ -54,7 +54,7 @@ public class Term {
      */
     private Integer score;
 
-    private List<Content> definitions = new ArrayList<>();
+    private List<Content> contents = new ArrayList<>();
 
     /**
      * Sequence number for the term. Terms with the same sequence number can be

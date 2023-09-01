@@ -227,7 +227,7 @@ public class YomichanParser {
                 case 2 -> term.setDefinitionTags(parseTags(item));
                 case 3 -> term.setRules(parseTags(item));
                 case 4 -> term.setScore(getInt(item));
-                case 5 -> term.setDefinitions(parseContents(item));
+                case 5 -> term.setContents(parseContents(item));
                 case 6 -> term.setSequenceNumber(getInt(item));
                 case 7 -> term.setTermTags(parseTags(item));
                 default ->
@@ -313,7 +313,7 @@ public class YomichanParser {
         switch (node.getNodeType()) {
             case STRING -> root.setText(node.asText());
             case ARRAY -> node.forEach(n -> parseStructuredContent(root, n));
-            case OBJECT -> root.getContent().add(parseStructuredContentObject(node));
+            case OBJECT -> root.getContents().add(parseStructuredContentObject(node));
             default -> throw new YomichanException("Unexpected node type in Term Structured Content: " + node);
         }
     }
