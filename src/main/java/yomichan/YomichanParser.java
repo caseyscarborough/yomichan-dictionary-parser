@@ -2,8 +2,6 @@ package yomichan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import net.lingala.zip4j.ZipFile;
-import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
 import yomichan.model.v3.Kanji;
@@ -13,16 +11,14 @@ import yomichan.model.v3.TermMetadata;
 import yomichan.parser.IYomichanParser;
 import yomichan.parser.YomichanParserFactory;
 import yomichan.parser.YomichanParserType;
-import yomichan.utils.FileUtils;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import static yomichan.parser.YomichanParserType.DICTIONARY;
 import static yomichan.parser.YomichanParserType.INDEX;
 import static yomichan.parser.YomichanParserType.KANJI;
 import static yomichan.parser.YomichanParserType.TAG;
@@ -30,7 +26,6 @@ import static yomichan.parser.YomichanParserType.TERM;
 import static yomichan.parser.YomichanParserType.TERM_META;
 import static yomichan.parser.YomichanParserType.values;
 import static yomichan.utils.FileUtils.getFile;
-import static yomichan.utils.FileUtils.getFiles;
 
 /**
  * Class for parsing Yomichan dictionary files.
@@ -70,15 +65,11 @@ import static yomichan.utils.FileUtils.getFiles;
 public class YomichanParser {
 
     @SuppressWarnings("rawtypes")
-    private final Map<YomichanParserType, IYomichanParser> parsers = new EnumMap<>(YomichanParserType.class);
+    private final Map<YomichanParserType, IYomichanParser> parsers;
 
     public YomichanParser() {
-        this(new ObjectMapper());
-    }
-
-    public YomichanParser(ObjectMapper mapper) {
-        YomichanParserFactory factory = new YomichanParserFactory(mapper);
-        Arrays.stream(values()).forEach(type -> parsers.put(type, factory.getInstance(type)));
+        YomichanParserFactory factory = new YomichanParserFactory(new ObjectMapper());
+        this.parsers = Arrays.stream(values()).collect(Collectors.toMap(type -> type, factory::getInstance));
     }
 
     /**
@@ -97,33 +88,10 @@ public class YomichanParser {
      * @param file The Yomichan dictionary file.
      * @return the parsed Yomichan dictionary.
      */
+    @SuppressWarnings("unchecked")
     public YomichanDictionary parseDictionary(final File file) {
-        log.info("Parsing Yomichan dictionary at path: {}", file.getAbsolutePath());
-        final long start = System.nanoTime();
-        final String dir = FileUtils.getTempFolder();
-        try (final ZipFile zip = new ZipFile(file)) {
-            log.debug("Extracting Yomichan dictionary {} to {}", zip.getFile().getName(), dir);
-            zip.extractAll(dir);
-
-            // Parse the index, term_bank, and tag_bank JSON files.
-            final YomichanDictionary dictionary = new YomichanDictionary();
-            this.<Index>parse(dir, INDEX).stream().findFirst().ifPresent(dictionary::setIndex);
-            this.<List<Kanji>>parse(dir, KANJI).forEach(kanji -> dictionary.getKanjis().addAll(kanji));
-            this.<List<Term>>parse(dir, TERM).forEach(term -> dictionary.getTerms().addAll(term));
-            this.<List<Tag>>parse(dir, TAG).forEach(tag -> dictionary.getTags().addAll(tag));
-            this.<List<TermMetadata>>parse(dir, TERM_META).forEach(termMeta -> dictionary.getTermMetadata().addAll(termMeta));
-
-            log.debug("Successfully parsed Yomichan {} dictionary {} in {}ms", dictionary.getType() != null ? dictionary.getType().getName() : "[Unknown]", zip.getFile().getName(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-            return dictionary;
-        } catch (Exception e) {
-            log.error("Couldn't parse Yomichan dictionary at path {}", file.getAbsolutePath(), e);
-            throw new YomichanException("Failed to parse Yomichan dictionary at path " + file.getAbsolutePath(), e);
-        } finally {
-            getFiles(dir, (d, name) -> name.endsWith(".json"))
-                .stream()
-                .map(File::getAbsolutePath)
-                .forEach(FileUtils::delete);
-        }
+        IYomichanParser<YomichanDictionary> parser = parsers.get(DICTIONARY);
+        return parser.parse(file);
     }
 
     /**
@@ -259,17 +227,5 @@ public class YomichanParser {
     public List<TermMetadata> parseTermMetadata(String path) {
         final File file = getFile(path);
         return parseTermMetadata(file);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> List<T> parse(String path, YomichanParserType type) {
-        final IYomichanParser<T> parser = parsers.get(type);
-        final List<File> files = getFiles(path, (dir, name) -> name.matches(type.getPattern()));
-        List<T> output = new ArrayList<>();
-        for (File file : files) {
-            final T parsed = parser.parse(file);
-            output.add(parsed);
-        }
-        return output;
     }
 }

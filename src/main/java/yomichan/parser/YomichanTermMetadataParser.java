@@ -27,14 +27,6 @@ class YomichanTermMetadataParser implements IYomichanParser<List<TermMetadata>> 
 
     private final ObjectMapper mapper;
 
-    /**
-     * Parse the term_meta_bank.json file.
-     *
-     * @param file The term_meta_bank.json file.
-     * @return The parsed term "meta" entries.
-     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-term-meta-bank-v3-schema.json">Yomichan Term Meta Bank v3 Schema</a>
-     * @see TermMetadata
-     */
     @Override
     public List<TermMetadata> parse(File file) {
         try {
@@ -52,11 +44,6 @@ class YomichanTermMetadataParser implements IYomichanParser<List<TermMetadata>> 
         } catch (IOException e) {
             throw new YomichanException("Failed to parse Yomichan term meta bank at path " + file.getAbsolutePath(), e);
         }
-    }
-
-    @Override
-    public YomichanParserType getType() {
-        return YomichanParserType.TERM_META;
     }
 
     private TermMetadata parseTermMeta(JsonNode node) {

@@ -22,14 +22,6 @@ class YomichanTagParser implements IYomichanParser<List<Tag>> {
 
     private final ObjectMapper mapper;
 
-    /**
-     * Parse the tags from the tag_bank.json file.
-     *
-     * @param file The tag_bank.json file.
-     * @return the list of Tags.
-     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-tag-bank-v3-schema.json">Yomichan Tag Bank v3 Schema</a>
-     * @see Tag
-     */
     @Override
     public List<Tag> parse(File file) {
         try {
@@ -47,11 +39,6 @@ class YomichanTagParser implements IYomichanParser<List<Tag>> {
         } catch (IOException e) {
             throw new YomichanException("Failed to parse Yomichan tag bank at path " + file.getAbsolutePath(), e);
         }
-    }
-
-    @Override
-    public YomichanParserType getType() {
-        return YomichanParserType.TAG;
     }
 
     private Tag parseTag(JsonNode node) {

@@ -11,6 +11,4 @@ public interface IYomichanParser<T> {
     }
 
     T parse(File file);
-
-    YomichanParserType getType();
 }

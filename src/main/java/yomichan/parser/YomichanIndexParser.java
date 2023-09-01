@@ -21,14 +21,6 @@ class YomichanIndexParser implements IYomichanParser<Index> {
 
     private final ObjectMapper mapper;
 
-    /**
-     * Parses the Yomichan index.json file.
-     *
-     * @param file The index.json file.
-     * @return the Index object.
-     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-index-schema.json">Yomichan Index Schema</a>
-     * @see Index
-     */
     @Override
     public Index parse(File file) {
         try {
@@ -51,10 +43,5 @@ class YomichanIndexParser implements IYomichanParser<Index> {
         } catch (IOException e) {
             throw new YomichanException("Failed to parse Yomichan index at path " + file.getAbsolutePath(), e);
         }
-    }
-
-    @Override
-    public YomichanParserType getType() {
-        return YomichanParserType.INDEX;
     }
 }

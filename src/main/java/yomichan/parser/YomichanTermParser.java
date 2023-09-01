@@ -39,14 +39,6 @@ class YomichanTermParser implements IYomichanParser<List<Term>> {
 
     private final ObjectMapper mapper;
 
-    /**
-     * Parses the term_bank.json file in the Yomichan dictionary.
-     *
-     * @param file The term_bank.json file.
-     * @return the parsed terms from the file.
-     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-term-bank-v3-schema.json">Yomichan Term Bank v3 Schema</a>
-     * @see Term
-     */
     @Override
     public List<Term> parse(File file) {
         try {
@@ -64,11 +56,6 @@ class YomichanTermParser implements IYomichanParser<List<Term>> {
         } catch (IOException e) {
             throw new YomichanException("Failed to parse Yomichan term bank at path " + file.getAbsolutePath(), e);
         }
-    }
-
-    @Override
-    public YomichanParserType getType() {
-        return YomichanParserType.TERM;
     }
 
     private Term parseTerm(JsonNode node) {

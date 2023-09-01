@@ -24,14 +24,6 @@ class YomichanKanjiParser implements IYomichanParser<List<Kanji>> {
 
     private final ObjectMapper mapper;
 
-    /**
-     * Parses the Yomichan kanji_bank.json file.
-     *
-     * @param file The kanji_bank.json file.
-     * @return The list of Kanji.
-     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-kanji-bank-v3-schema.json">Yomichan Kanji Bank v3 Schema</a>
-     * @see Kanji
-     */
     @Override
     public List<Kanji> parse(File file) {
         try {
@@ -49,11 +41,6 @@ class YomichanKanjiParser implements IYomichanParser<List<Kanji>> {
         } catch (IOException e) {
             throw new YomichanException("Failed to parse Yomichan kanji bank at path " + file.getAbsolutePath(), e);
         }
-    }
-
-    @Override
-    public YomichanParserType getType() {
-        return YomichanParserType.KANJI;
     }
 
     private Kanji parseKanji(JsonNode node) {
