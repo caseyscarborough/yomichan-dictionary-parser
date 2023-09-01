@@ -1,110 +1,125 @@
 package yomichan;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
-import yomichan.model.YomichanDictionaryType;
 import yomichan.model.v3.Kanji;
 import yomichan.model.v3.Tag;
-import yomichan.model.v3.TermMeta;
-import yomichan.model.v3.term.Appearance;
-import yomichan.model.v3.term.Content;
-import yomichan.model.v3.term.ContentData;
-import yomichan.model.v3.term.ContentStyle;
-import yomichan.model.v3.term.ContentType;
-import yomichan.model.v3.term.FontStyle;
-import yomichan.model.v3.term.FontWeight;
-import yomichan.model.v3.term.HtmlTag;
-import yomichan.model.v3.term.ImageRendering;
-import yomichan.model.v3.term.SizeUnits;
-import yomichan.model.v3.term.StructuredContent;
 import yomichan.model.v3.Term;
-import yomichan.model.v3.term.TextAlign;
-import yomichan.model.v3.term.TextDecorationLine;
-import yomichan.model.v3.term.VerticalAlign;
-import yomichan.model.v3.term.meta.Frequency;
-import yomichan.model.v3.term.meta.Pitch;
-import yomichan.model.v3.term.meta.Pitches;
+import yomichan.model.v3.TermMetadata;
+import yomichan.parser.IYomichanParser;
+import yomichan.parser.YomichanParserFactory;
+import yomichan.parser.YomichanParserType;
 import yomichan.utils.FileUtils;
 
 import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static yomichan.utils.JsonUtils.getBoolean;
-import static yomichan.utils.JsonUtils.getDouble;
-import static yomichan.utils.JsonUtils.getInt;
-import static yomichan.utils.JsonUtils.getText;
-import static yomichan.utils.JsonUtils.parseIntegerArray;
-import static yomichan.utils.JsonUtils.parseSpaceSeparatedText;
-import static yomichan.utils.JsonUtils.parseStringArray;
-import static yomichan.utils.JsonUtils.toMap;
+import static yomichan.parser.YomichanParserType.INDEX;
+import static yomichan.parser.YomichanParserType.KANJI;
+import static yomichan.parser.YomichanParserType.TAG;
+import static yomichan.parser.YomichanParserType.TERM;
+import static yomichan.parser.YomichanParserType.TERM_META;
+import static yomichan.parser.YomichanParserType.values;
+import static yomichan.utils.FileUtils.getFile;
+import static yomichan.utils.FileUtils.getFiles;
 
+/**
+ * Class for parsing Yomichan dictionary files.
+ *
+ * <p>Examples:</p>
+ *
+ * <h4>Parse a Dictionary File</h5>
+ *
+ * <pre>{@code
+ *     YomichanParser parser = new YomichanParser();
+ *     YomichanDictionary dictionary = parser.parseDictionary("/path/to/yomichan/dictionary.zip");
+ * }</pre>
+ *
+ * <h4>Parse Individually Extracted Files</h5>
+ *
+ * <pre>{@code
+ *     // Parse an extracted index.json file
+ *     Index index = parser.parseIndex("/path/to/yomichan/index.json");
+ *
+ *     // Parse an extracted kanji_bank.json file
+ *     List<Kanji> kanji = parser.parseKanjis("/path/to/yomichan/kanji_bank.json");
+ *
+ *     // Parse an extracted tag_bank.json file
+ *     List<Tag> tags = parser.parseTags("/path/to/yomichan/tag_bank.json");
+ *
+ *     // Parse an extracted term_bank.json file
+ *     List<Term> terms = parser.parseTerms("/path/to/yomichan/term_bank.json");
+ *
+ *     // Parse an extracted term_meta_bank.json file
+ *     List<TermMetadata> termMeta = parser.parseTermMetadata("/path/to/yomichan/term_meta_bank.json");
+ * }</pre>
+ *
+ * @see <a href="https://github.com/caseyscarborough/yomichan-dictionary-parser">yomichan-dictionary-parser on GitHub</a>
+ * @see <a href="https://github.com/FooSoft/yomichan/tree/master/ext/data/schemas">Yomichan JSON Schema Definitions</a>
+ */
 @Slf4j
-@RequiredArgsConstructor
 public class YomichanParser {
 
-    private final ObjectMapper mapper;
+    @SuppressWarnings("rawtypes")
+    private final Map<YomichanParserType, IYomichanParser> parsers = new EnumMap<>(YomichanParserType.class);
 
     public YomichanParser() {
         this(new ObjectMapper());
     }
 
+    public YomichanParser(ObjectMapper mapper) {
+        YomichanParserFactory factory = new YomichanParserFactory(mapper);
+        Arrays.stream(values()).forEach(type -> parsers.put(type, factory.getInstance(type)));
+    }
+
     /**
      * Parse the Yomichan dictionary .zip file.
      *
-     * @param path The path to the file.
+     * @param path The path to the Yomichan dictionary file.
      * @return the parsed Yomichan dictionary.
      */
     public YomichanDictionary parseDictionary(final String path) {
-        log.info("Parsing Yomichan dictionary at path: {}", path);
+        return this.parseDictionary(getFile(path));
+    }
+
+    /**
+     * Parse the Yomichan dictionary .zip file.
+     *
+     * @param file The Yomichan dictionary file.
+     * @return the parsed Yomichan dictionary.
+     */
+    public YomichanDictionary parseDictionary(final File file) {
+        log.info("Parsing Yomichan dictionary at path: {}", file.getAbsolutePath());
         final long start = System.nanoTime();
-        final String tmp = FileUtils.getTempFolder();
-        final File file = getFile(path);
+        final String dir = FileUtils.getTempFolder();
         try (final ZipFile zip = new ZipFile(file)) {
-            log.debug("Extracting Yomichan dictionary {} to {}", file.getName(), tmp);
-            zip.extractAll(tmp);
+            log.debug("Extracting Yomichan dictionary {} to {}", zip.getFile().getName(), dir);
+            zip.extractAll(dir);
 
             // Parse the index, term_bank, and tag_bank JSON files.
             final YomichanDictionary dictionary = new YomichanDictionary();
-            for (File index : getFiles(tmp, (dir, name) -> name.startsWith("index"))) {
-                dictionary.setIndex(parseIndex(index));
-                // Only parse the first index file.
-                break;
-            }
-            for (File tag : getFiles(tmp, (dir, name) -> name.startsWith("tag_bank"))) {
-                dictionary.getTags().addAll(parseTags(tag));
-            }
-            for (File term : getFiles(tmp, (dir, name) -> name.startsWith("term_bank"))) {
-                dictionary.getTerms().addAll(parseTerms(term));
-                dictionary.setType(YomichanDictionaryType.TERM);
-            }
-            for (File kanji : getFiles(tmp, (dir, name) -> name.startsWith("kanji_bank"))) {
-                dictionary.getKanjis().addAll(parseKanjis(kanji));
-                dictionary.setType(YomichanDictionaryType.KANJI);
-            }
-            for (File meta: getFiles(tmp, (dir, name) -> name.startsWith("term_meta_bank"))) {
-                dictionary.getTermMetas().addAll(parseTermMetas(meta));
-                dictionary.setType(YomichanDictionaryType.findByMetaType(dictionary.getTermMetas().get(0).getType()));
-            }
+            this.<Index>parse(dir, INDEX).stream().findFirst().ifPresent(dictionary::setIndex);
+            this.<List<Kanji>>parse(dir, KANJI).forEach(kanji -> dictionary.getKanjis().addAll(kanji));
+            this.<List<Term>>parse(dir, TERM).forEach(term -> dictionary.getTerms().addAll(term));
+            this.<List<Tag>>parse(dir, TAG).forEach(tag -> dictionary.getTags().addAll(tag));
+            this.<List<TermMetadata>>parse(dir, TERM_META).forEach(termMeta -> dictionary.getTermMetadata().addAll(termMeta));
 
-            log.debug("Successfully parsed Yomichan {} dictionary {} in {}ms", dictionary.getType() != null ? dictionary.getType().getName() : "[Unknown]", file.getName(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+            log.debug("Successfully parsed Yomichan {} dictionary {} in {}ms", dictionary.getType() != null ? dictionary.getType().getName() : "[Unknown]", zip.getFile().getName(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
             return dictionary;
         } catch (Exception e) {
-            log.error("Couldn't parse Yomichan dictionary at path {}", path, e);
-            throw new YomichanException("Failed to parse Yomichan dictionary at path " + path, e);
+            log.error("Couldn't parse Yomichan dictionary at path {}", file.getAbsolutePath(), e);
+            throw new YomichanException("Failed to parse Yomichan dictionary at path " + file.getAbsolutePath(), e);
         } finally {
-            getFiles(tmp, (dir, name) -> name.endsWith(".json"))
+            getFiles(dir, (d, name) -> name.endsWith(".json"))
                 .stream()
                 .map(File::getAbsolutePath)
                 .forEach(FileUtils::delete);
@@ -119,27 +134,10 @@ public class YomichanParser {
      * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-index-schema.json">Yomichan Index Schema</a>
      * @see Index
      */
+    @SuppressWarnings("unchecked")
     public Index parseIndex(File file) {
-        try {
-            log.info("Parsing Yomichan index file at path {}", file.getAbsolutePath());
-            long start = System.nanoTime();
-            final JsonNode node = mapper.readTree(file);
-            final Index index = new Index();
-            index.setAttribution(getText(node, "attribution"));
-            index.setAuthor(getText(node, "author"));
-            index.setDescription(getText(node, "description"));
-            index.setFormat(getInt(node, "format"));
-            index.setFrequencyMode(Index.FrequencyMode.from(getText(node, "frequencyMode")));
-            index.setRevision(getText(node, "revision"));
-            index.setSequenced(getBoolean(node, "sequenced", false));
-            index.setTitle(getText(node, "title"));
-            index.setUrl(getText(node, "url"));
-            index.setVersion(getInt(node, "version"));
-            log.debug("Successfully parsed Yomichan index file in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-            return index;
-        } catch (IOException e) {
-            throw new YomichanException("Failed to parse Yomichan index at path " + file.getAbsolutePath(), e);
-        }
+        IYomichanParser<Index> parser = parsers.get(INDEX);
+        return parser.parse(file);
     }
 
     /**
@@ -163,22 +161,10 @@ public class YomichanParser {
      * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-kanji-bank-v3-schema.json">Yomichan Kanji Bank v3 Schema</a>
      * @see Kanji
      */
+    @SuppressWarnings("unchecked")
     public List<Kanji> parseKanjis(File file) {
-        try {
-            final JsonNode node = mapper.readTree(file);
-            if (!node.isArray()) {
-                throw new YomichanException("Yomichan kanji bank should be an array.");
-            }
-
-            log.info("Parsing Yomichan kanji bank at path {}", file.getAbsolutePath());
-            final long start = System.nanoTime();
-            List<Kanji> kanji = new ArrayList<>();
-            node.forEach(n -> kanji.add(parseKanji(n)));
-            log.debug("Successfully parsed {} kanji in {}ms", kanji.size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-            return kanji;
-        } catch (IOException e) {
-            throw new YomichanException("Failed to parse Yomichan kanji bank at path " + file.getAbsolutePath(), e);
-        }
+        IYomichanParser<List<Kanji>> parser = parsers.get(KANJI);
+        return parser.parse(file);
     }
 
     /**
@@ -202,22 +188,10 @@ public class YomichanParser {
      * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-tag-bank-v3-schema.json">Yomichan Tag Bank v3 Schema</a>
      * @see Tag
      */
+    @SuppressWarnings("unchecked")
     public List<Tag> parseTags(File file) {
-        try {
-            final JsonNode node = mapper.readTree(file);
-            if (!node.isArray()) {
-                throw new YomichanException("Yomichan tag bank should be an array.");
-            }
-
-            log.info("Parsing Yomichan tag bank at path {}", file.getAbsolutePath());
-            final long start = System.nanoTime();
-            final List<Tag> tags = new ArrayList<>();
-            node.forEach(n -> tags.add(parseTag(n)));
-            log.debug("Successfully parsed {} tags in {}ms", tags.size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-            return tags;
-        } catch (IOException e) {
-            throw new YomichanException("Failed to parse Yomichan tag bank at path " + file.getAbsolutePath(), e);
-        }
+        final IYomichanParser<List<Tag>> parser = parsers.get(TAG);
+        return parser.parse(file);
     }
 
     /**
@@ -241,22 +215,10 @@ public class YomichanParser {
      * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-term-bank-v3-schema.json">Yomichan Term Bank v3 Schema</a>
      * @see Term
      */
+    @SuppressWarnings("unchecked")
     public List<Term> parseTerms(File file) {
-        try {
-            final JsonNode node = mapper.readTree(file);
-            if (!node.isArray()) {
-                throw new YomichanException("Yomichan term bank should be an array.");
-            }
-
-            log.info("Parsing Yomichan term bank at path {}", file.getAbsolutePath());
-            final long start = System.nanoTime();
-            final List<Term> terms = new ArrayList<>();
-            node.forEach(n -> terms.add(parseTerm(n)));
-            log.debug("Successfully parsed {} terms in {}ms", terms.size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-            return terms;
-        } catch (IOException e) {
-            throw new YomichanException("Failed to parse Yomichan term bank at path " + file.getAbsolutePath(), e);
-        }
+        final IYomichanParser<List<Term>> parser = parsers.get(TERM);
+        return parser.parse(file);
     }
 
     /**
@@ -272,310 +234,42 @@ public class YomichanParser {
         return parseTerms(file);
     }
 
-    private Term parseTerm(JsonNode node) {
-        if (!node.isArray()) {
-            throw new YomichanException("Yomichan term bank array items should start with an array.");
-        }
-        final Term term = new Term();
-        for (int i = 0; i < node.size(); i++) {
-            JsonNode item = node.get(i);
-            switch (i) {
-                case 0 -> term.setTerm(getText(item));
-                case 1 -> term.setReading(getText(item));
-                case 2 -> term.setDefinitionTags(parseSpaceSeparatedText(item));
-                case 3 -> term.setRules(parseSpaceSeparatedText(item));
-                case 4 -> term.setScore(getInt(item));
-                case 5 -> term.setContents(parseContents(item));
-                case 6 -> term.setSequenceNumber(getInt(item));
-                case 7 -> term.setTermTags(parseSpaceSeparatedText(item));
-                default ->
-                    throw new YomichanException("Couldn't parse term due to invalid length. Yomichan term array should be 8 items long: " + node);
-            }
-        }
-        return term;
-    }
-
-    private Tag parseTag(JsonNode node) {
-        if (!node.isArray()) {
-            throw new YomichanException("Yomichan tag bank array items should start with an array.");
-        }
-        Tag tag = new Tag();
-        for (int i = 0; i < node.size(); i++) {
-            JsonNode n = node.get(i);
-            switch (i) {
-                case 0 -> tag.setName(getText(n));
-                case 1 -> tag.setCategory(getText(n));
-                case 2 -> tag.setOrder(getInt(n));
-                case 3 -> tag.setNotes(getText(n));
-                case 4 -> tag.setScore(getInt(n));
-                default ->
-                    throw new YomichanException("Couldn't parse tag due to invalid length. Yomichan tag array should be 5 items long: " + node);
-            }
-        }
-        return tag;
-    }
-
-    private Kanji parseKanji(JsonNode node) {
-        if (!node.isArray()) {
-            throw new YomichanException("Yomichan kanji bank array items should be an array.");
-        }
-
-        final Kanji kanji = new Kanji();
-        for (int i = 0; i < node.size(); i++) {
-            JsonNode item = node.get(i);
-            switch (i) {
-                case 0 -> kanji.setCharacter(getText(item));
-                case 1 -> kanji.setOnyomi(parseSpaceSeparatedText(item));
-                case 2 -> kanji.setKunyomi(parseSpaceSeparatedText(item));
-                case 3 -> kanji.setTags(parseSpaceSeparatedText(item));
-                case 4 -> kanji.setMeanings(parseStringArray(item));
-                case 5 -> kanji.setStats(toMap(item));
-                default ->
-                    throw new YomichanException("Couldn't parse kanji due to invalid length. Yomichan kanji array should be 6 items long: " + node);
-            }
-        }
-        return kanji;
+    /**
+     * Parse the term_meta_bank.json file.
+     *
+     * @param file The term_meta_bank.json file.
+     * @return The parsed term "meta" entries.
+     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-term-meta-bank-v3-schema.json">Yomichan Term Meta Bank v3 Schema</a>
+     * @see TermMetadata
+     */
+    @SuppressWarnings("unchecked")
+    public List<TermMetadata> parseTermMetadata(File file) {
+        final IYomichanParser<List<TermMetadata>> parser = parsers.get(TERM_META);
+        return parser.parse(file);
     }
 
     /**
      * Parse the term_meta_bank.json file.
-     * @param file The term_meta_bank.json file.
+     *
+     * @param path The path to the term_meta_bank.json file.
      * @return The parsed term "meta" entries.
      * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-term-meta-bank-v3-schema.json">Yomichan Term Meta Bank v3 Schema</a>
-     * @see TermMeta
+     * @see TermMetadata
      */
-    public List<TermMeta> parseTermMetas(File file) {
-        try {
-            JsonNode root = mapper.readTree(file);
-            if (!root.isArray()) {
-                throw new YomichanException("Yomichan term meta bank should be an array.");
-            }
-
-            log.info("Parsing Yomichan term meta bank at path {}", file.getAbsolutePath());
-            final long start = System.nanoTime();
-            final List<TermMeta> metas = new ArrayList<>();
-            root.forEach(n -> metas.add(parseTermMeta(n)));
-            log.debug("Successfully parsed {} term metas in {}ms", metas.size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-            return metas;
-        } catch (IOException e) {
-            throw new YomichanException("Failed to parse Yomichan term meta bank at path " + file.getAbsolutePath(), e);
-        }
+    public List<TermMetadata> parseTermMetadata(String path) {
+        final File file = getFile(path);
+        return parseTermMetadata(file);
     }
 
-    private TermMeta parseTermMeta(JsonNode node) {
-        if (!node.isArray()) {
-            throw new YomichanException("Yomichan term meta bank array items should be an array.");
+    @SuppressWarnings("unchecked")
+    private <T> List<T> parse(String path, YomichanParserType type) {
+        final IYomichanParser<T> parser = parsers.get(type);
+        final List<File> files = getFiles(path, (dir, name) -> name.matches(type.getPattern()));
+        List<T> output = new ArrayList<>();
+        for (File file : files) {
+            final T parsed = parser.parse(file);
+            output.add(parsed);
         }
-        TermMeta meta = new TermMeta();
-        for (int i = 0; i < node.size(); i++) {
-            JsonNode item = node.get(i);
-            switch (i) {
-                case 0 -> meta.setText(getText(item));
-                case 1 -> meta.setType(TermMeta.Type.from(getText(item)));
-                case 2 -> parsePitchesOrFrequency(meta, item);
-                default -> throw new YomichanException("Couldn't parse term meta due to invalid length. Yomichan term meta array should be 3 items long: " + node);
-            }
-        }
-        return meta;
-    }
-
-    private void parsePitchesOrFrequency(TermMeta meta, JsonNode node) {
-        switch (meta.getType()) {
-            case PITCH -> meta.setPitches(parsePitches(node));
-            case FREQUENCY -> meta.setFrequency(parseFrequency(node));
-        }
-    }
-
-    private Frequency parseFrequency(JsonNode node) {
-        if (!node.isObject()) {
-            throw new YomichanException("Yomichan frequency metadata should be an object.");
-        }
-        Frequency frequency = new Frequency();
-        frequency.setValue(getInt(node, "value"));
-        frequency.setDisplay(getText(node, "displayValue"));
-        return frequency;
-    }
-
-    private Pitches parsePitches(JsonNode node) {
-        if (!node.isObject()) {
-            throw new YomichanException("Yomichan pitch metadata should be an object.");
-        }
-        Pitches pitches = new Pitches();
-        pitches.setReading(getText(node, "reading"));
-        pitches.setPitches(parsePitchArray(node.get("pitches")));
-        return pitches;
-    }
-
-    private List<Pitch> parsePitchArray(JsonNode node) {
-        if (!node.isArray()) {
-            throw new YomichanException("Yomichan pitches should be an array.");
-        }
-        List<Pitch> pitches = new ArrayList<>();
-        node.forEach(n -> pitches.add(parsePitch(n)));
-        return pitches;
-    }
-
-    private Pitch parsePitch(JsonNode node) {
-        if (!node.isObject()) {
-            throw new YomichanException("Yomichan pitch should be an object.");
-        }
-        Pitch pitch = new Pitch();
-        pitch.setDownstep(getInt(node.get("position")));
-        pitch.setNasals(parseIntegerArray(node.get("nasal")));
-        pitch.setDevoicings(parseIntegerArray(node.get("devoice")));
-        pitch.setTags(parseStringArray(node.get("tags")));
-        return pitch;
-    }
-
-
-    private File getFile(final String path) {
-        final File file = new File(path);
-        if (!file.exists()) {
-            throw new YomichanException("File does not exist at path " + path);
-        }
-        return file;
-    }
-
-    private List<Content> parseContents(JsonNode node) {
-        final List<Content> output = new ArrayList<>();
-        node.forEach(n -> output.add(parseContent(n)));
         return output;
-    }
-
-    private Content parseContent(JsonNode node) {
-        final Content content = new Content();
-        switch (node.getNodeType()) {
-            case STRING -> parseContentString(content, node);
-            case OBJECT -> parseContentObject(content, node);
-            default -> throw new YomichanException("Content node should only be a string or object: " + node);
-        }
-        log.trace("Done parsing {} content", content.getType().getValue());
-        return content;
-    }
-
-    private void parseContentString(Content content, JsonNode node) {
-        content.setText(node.asText());
-        content.setType(ContentType.TEXT);
-    }
-
-    private void parseContentObject(Content content, JsonNode node) {
-        final JsonNode type = node.get("type");
-        final ContentType contentType = ContentType.from(type.asText());
-        content.setType(contentType);
-        switch (contentType) {
-            case TEXT -> content.setText(getText(node, "text"));
-            case IMAGE -> {
-                parseImageFields(content, node);
-                content.setDescription(getText(node, "description"));
-            }
-            case STRUCTURED_CONTENT -> parseStructuredContent(content, node.get("content"));
-            default -> throw new YomichanException("Unimplemented Yomichan content type: " + contentType);
-        }
-    }
-
-    private void parseStructuredContent(Content root, JsonNode node) {
-        log.trace("Parsing structured content: {}", node.toString());
-        switch (node.getNodeType()) {
-            case STRING -> root.setText(node.asText());
-            case ARRAY -> node.forEach(n -> parseStructuredContent(root, n));
-            case OBJECT -> root.getContents().add(parseStructuredContentObject(node));
-            default -> throw new YomichanException("Unexpected node type in Term Structured Content: " + node);
-        }
-    }
-
-    private StructuredContent parseStructuredContentObject(JsonNode node) {
-        final StructuredContent content = new StructuredContent();
-        content.setTag(HtmlTag.from(getText(node, "tag")));
-        switch (content.getTag()) {
-            case BR -> content.setData(parseData(node.get("data")));
-            case RUBY, RT, RP, TABLE, THEAD, TBODY, TFOOT, TR -> {
-                parseStructuredContent(content, node.get("content"));
-                content.setData(parseData(node.get("data")));
-                content.setLang(getText(node, "lang"));
-            }
-            case TD, TH -> {
-                parseStructuredContent(content, node.get("content"));
-                content.setColSpan(getInt(node, "colSpan"));
-                content.setData(parseData(node.get("data")));
-                content.setLang(getText(node, "lang"));
-                content.setRowSpan(getInt(node, "rowSpan"));
-                content.setStyle(parseStyle(node.get("style")));
-            }
-            case SPAN, DIV, OL, UL, LI -> {
-                parseStructuredContent(content, node.get("content"));
-                content.setData(parseData(node.get("data")));
-                content.setLang(getText(node, "lang"));
-                content.setStyle(parseStyle(node.get("style")));
-            }
-            case IMG -> {
-                parseImageFields(content, node);
-                content.setData(parseData(node.get("data")));
-                content.setSizeUnits(SizeUnits.from(getText(node, "sizeUnits")));
-                content.setVerticalAlign(VerticalAlign.from(getText(node, "verticalAlign")));
-            }
-            case A -> {
-                parseStructuredContent(content, node.get("content"));
-                content.setHref(getText(node, "href"));
-                content.setLang(getText(node, "lang"));
-            }
-            default -> throw new YomichanException("Unimplemented tag in Term Structured Content: " + node);
-        }
-        return content;
-    }
-
-    private void parseTextDecorationLine(ContentStyle style, JsonNode tdl) {
-        if (tdl == null) return;
-        switch (tdl.getNodeType()) {
-            case STRING -> style.getTextDecorationLine().add(TextDecorationLine.from(tdl.asText()));
-            case ARRAY -> tdl.forEach(t -> parseTextDecorationLine(style, t));
-            default ->
-                throw new YomichanException("Only expecting string or array for textDecorationLine in Yomichan structured content style: " + tdl);
-        }
-    }
-
-    private ContentStyle parseStyle(JsonNode node) {
-        if (node == null) return null;
-        final ContentStyle style = new ContentStyle();
-        parseTextDecorationLine(style, node.get("textDecorationLine"));
-        style.setFontSize(getText(node, "fontSize", "medium"));
-        style.setFontStyle(FontStyle.from(getText(node, "fontStyle")));
-        style.setFontWeight(FontWeight.from(getText(node, "fontWeight")));
-        style.setTextAlign(TextAlign.from(getText(node, "textAlign")));
-        style.setVerticalAlign(VerticalAlign.from(getText(node, "verticalAlign")));
-        style.setMarginTop(getDouble(node, "marginTop", 0D));
-        style.setMarginLeft(getDouble(node, "marginLeft", 0D));
-        style.setMarginRight(getDouble(node, "marginRight", 0D));
-        style.setMarginBottom(getDouble(node, "marginBottom", 0D));
-        style.setListStyleType(getText(node, "listStyleType", "disc"));
-        return style;
-    }
-
-    private ContentData parseData(JsonNode node) {
-        if (node == null) return null;
-        final ContentData data = new ContentData();
-        node.fields().forEachRemaining(f -> data.setData(f.getKey(), f.getValue().asText()));
-        return data;
-    }
-
-    private void parseImageFields(Content content, JsonNode node) {
-        content.setAppearance(Appearance.from(getText(node, "appearance")));
-        content.setBackground(getBoolean(node, "background", false));
-        content.setCollapsed(getBoolean(node, "collapsed", false));
-        content.setCollapsible(getBoolean(node, "collapsible", true));
-        content.setHeight(getDouble(node, "height"));
-        content.setImageRendering(ImageRendering.from(getText(node, "imageRendering")));
-        content.setPath(getText(node, "path"));
-        content.setPixelated(getBoolean(node, "pixelated", false));
-        content.setTitle(getText(node, "title"));
-        content.setWidth(getDouble(node, "width"));
-    }
-
-    private List<File> getFiles(final String path, final FilenameFilter filter) {
-        File file = new File(path);
-        final File[] files = file.listFiles(filter);
-        if (files == null) {
-            return new ArrayList<>();
-        }
-        return Arrays.stream(files).sorted(Comparator.comparing(File::getName)).toList();
     }
 }

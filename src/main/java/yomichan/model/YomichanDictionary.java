@@ -1,22 +1,33 @@
 package yomichan.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import yomichan.model.v3.Kanji;
 import yomichan.model.v3.Tag;
 import yomichan.model.v3.Term;
-import yomichan.model.v3.TermMeta;
+import yomichan.model.v3.TermMetadata;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 public class YomichanDictionary {
+
     private Index index;
     private List<Tag> tags = new ArrayList<>();
     private List<Term> terms = new ArrayList<>();
     private List<Kanji> kanjis = new ArrayList<>();
-    private List<TermMeta> termMetas = new ArrayList<>();
-    private YomichanDictionaryType type;
+    private List<TermMetadata> termMetadata = new ArrayList<>();
+
+    public YomichanDictionaryType getType() {
+        if (!terms.isEmpty()) {
+            return YomichanDictionaryType.TERM;
+        }
+        if (!kanjis.isEmpty()) {
+            return YomichanDictionaryType.KANJI;
+        }
+        if (!termMetadata.isEmpty()) {
+            return YomichanDictionaryType.findByMetadataType(termMetadata.get(0).getType());
+        }
+        throw new IllegalStateException("Could not determine dictionary type.");
+    }
 }

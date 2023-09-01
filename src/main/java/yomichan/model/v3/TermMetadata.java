@@ -8,8 +8,11 @@ import yomichan.model.v3.term.meta.Pitches;
 
 import java.util.Arrays;
 
+/**
+ * The term "metadata" object for Yomichan Frequency and Pitch Accent dictionaries.
+ */
 @Data
-public class TermMeta {
+public class TermMetadata {
 
     /**
      * The frequency information for this metadata entry.

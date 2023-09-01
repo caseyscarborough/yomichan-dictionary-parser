@@ -1,5 +1,6 @@
 package yomichan.model.v3;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,8 +9,7 @@ import lombok.Setter;
  *
  * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-tag-bank-v3-schema.json">Yomichan Tag Bank v3 Schema</a>
  */
-@Getter
-@Setter
+@Data
 public class Tag {
 
     /**

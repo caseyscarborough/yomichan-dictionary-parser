@@ -2,7 +2,7 @@ package yomichan.model;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import yomichan.model.v3.TermMeta;
+import yomichan.model.v3.TermMetadata;
 
 /**
  * The Yomichan dictionary type.
@@ -18,7 +18,7 @@ public enum YomichanDictionaryType {
 
     private final String name;
 
-    public static YomichanDictionaryType findByMetaType(TermMeta.Type type) {
+    public static YomichanDictionaryType findByMetadataType(TermMetadata.Type type) {
         return switch (type) {
             case PITCH -> PITCH;
             case FREQUENCY -> FREQUENCY;

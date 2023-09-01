@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The Kanji object for Yomichan Kanji dictionaries.
+ */
 @Data
 public class Kanji {
 

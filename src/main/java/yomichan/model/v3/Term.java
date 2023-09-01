@@ -1,5 +1,6 @@
 package yomichan.model.v3;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -13,9 +14,7 @@ import java.util.List;
  *
  * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-term-bank-v3-schema.json">Yomichan Term Bank v3 Schema</a></a>
  */
-@Getter
-@Setter
-@ToString
+@Data
 public class Term {
 
     /**

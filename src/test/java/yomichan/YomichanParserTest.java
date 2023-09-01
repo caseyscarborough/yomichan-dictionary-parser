@@ -1,6 +1,5 @@
 package yomichan;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import yomichan.exception.YomichanException;
@@ -9,7 +8,7 @@ import yomichan.model.YomichanDictionary;
 import yomichan.model.v3.Kanji;
 import yomichan.model.v3.Tag;
 import yomichan.model.v3.Term;
-import yomichan.model.v3.TermMeta;
+import yomichan.model.v3.TermMetadata;
 import yomichan.model.v3.term.Content;
 import yomichan.model.v3.term.ContentType;
 import yomichan.model.v3.term.HtmlTag;
@@ -37,8 +36,7 @@ class YomichanParserTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper mapper = new ObjectMapper();
-        parser = new YomichanParser(mapper);
+        parser = new YomichanParser();
     }
 
     @Test
@@ -87,12 +85,12 @@ class YomichanParserTest {
                 case TERM -> assertFalse(dictionary.getTerms().isEmpty());
                 case KANJI -> assertFalse(dictionary.getKanjis().isEmpty());
                 case PITCH -> {
-                    assertFalse(dictionary.getTermMetas().isEmpty());
-                    dictionary.getTermMetas().forEach(meta -> assertEquals(TermMeta.Type.PITCH, meta.getType()));
+                    assertFalse(dictionary.getTermMetadata().isEmpty());
+                    dictionary.getTermMetadata().forEach(meta -> assertEquals(TermMetadata.Type.PITCH, meta.getType()));
                 }
                 case FREQUENCY -> {
-                    assertFalse(dictionary.getTermMetas().isEmpty());
-                    dictionary.getTermMetas().forEach(meta -> assertEquals(TermMeta.Type.FREQUENCY, meta.getType()));
+                    assertFalse(dictionary.getTermMetadata().isEmpty());
+                    dictionary.getTermMetadata().forEach(meta -> assertEquals(TermMetadata.Type.FREQUENCY, meta.getType()));
                 }
             }
         }
@@ -217,11 +215,11 @@ class YomichanParserTest {
     @Test
     void testParsingSingleTermMetaForPitches() {
         File file = new File(FILES_ROOT + "/term_meta_bank_2.json");
-        final List<TermMeta> metas = parser.parseTermMetas(file);
+        final List<TermMetadata> metas = parser.parseTermMetadata(file);
         assertFalse(metas.isEmpty());
         assertEquals(510, metas.size());
-        final TermMeta meta = metas.get(1);
-        assertEquals(TermMeta.Type.PITCH, meta.getType());
+        final TermMetadata meta = metas.get(1);
+        assertEquals(TermMetadata.Type.PITCH, meta.getType());
         assertEquals("積雪地帯", meta.getText());
         final Pitches pitches = meta.getPitches();
         assertEquals("せきせつちたい", pitches.getReading());
@@ -232,11 +230,11 @@ class YomichanParserTest {
     @Test
     void testParsingSingleTermMetaForFrequency() {
         File file = new File(FILES_ROOT + "/term_meta_bank_1.json");
-        final List<TermMeta> metas = parser.parseTermMetas(file);
+        final List<TermMetadata> metas = parser.parseTermMetadata(file);
         assertFalse(metas.isEmpty());
         assertEquals(156, metas.size());
-        final TermMeta meta = metas.get(0);
-        assertEquals(TermMeta.Type.FREQUENCY, meta.getType());
+        final TermMetadata meta = metas.get(0);
+        assertEquals(TermMetadata.Type.FREQUENCY, meta.getType());
         assertEquals("の", meta.getText());
         final Frequency frequency = meta.getFrequency();
         assertEquals(1, frequency.getValue());
