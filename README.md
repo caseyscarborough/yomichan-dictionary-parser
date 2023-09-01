@@ -47,6 +47,8 @@ YomichanDictionary dictionary = parser.parseDictionary("/path/to/yomichan/dictio
 
 This will return a `YomichanDictionary` object, which contains the object representation of the dictionary including the index, terms, and tags.
 
+> Note: The dictionary file will be extracted to a temporary directory which will be removed after parsing.
+
 ### Parse Extracted Dictionary Files
 
 You can also individually parse the index, terms, and tags by passing the path (or `File` object) to the JSON file from the extracted dictionary.
@@ -238,7 +240,7 @@ The structured content also has many additional properties on them such as style
 data (which map to `data` tags on the HTML entities), and language.
 
 For more information take a look at the [Yomichan Term Bank v3 JSON Schema](https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-term-bank-v3-schema.json)
-or the [`Term` class](https://github.com/caseyscarborough/yomichan-dictionary-parser/blob/master/src/main/java/yomichan/model/v3/Term.java) which is well documented.
+or the [`Term` class](https://github.com/caseyscarborough/yomichan-dictionary-parser/blob/master/src/main/java/yomichan/model/v3/Term.java).
 
 ### Working with Tags
 
@@ -272,8 +274,8 @@ Integer score = tag.getScore();
 
 </details>
 
-For more information take a look at the [Yomichan Tag Bank v3 Schema](https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-tag-bank-v3-schema.json)
-or the [`Tag` class](https://github.com/caseyscarborough/yomichan-dictionary-parser/blob/master/src/main/java/yomichan/model/v3/Tag.java) which is well documented.
+For more information take a look at the [Yomichan Tag Bank v3 JSON Schema](https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-tag-bank-v3-schema.json)
+or the [`Tag` class](https://github.com/caseyscarborough/yomichan-dictionary-parser/blob/master/src/main/java/yomichan/model/v3/Tag.java).
 
 ### Working with Kanji
 
@@ -307,7 +309,7 @@ Map<String, String> stats = kanji.getStats();
 
 </details>
 
-For more information take a look at the [Yomichan Kanji Bank v3 Schema](https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-kanji-bank-v3-schema.json)
+For more information take a look at the [Yomichan Kanji Bank v3 JSON Schema](https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-kanji-bank-v3-schema.json)
 or the [`Kanji` class](https://github.com/caseyscarborough/yomichan-dictionary-parser/blob/master/src/main/java/yomichan/model/v3/Kanji.java).
 
 ## TODO
