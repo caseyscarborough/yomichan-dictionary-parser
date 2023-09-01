@@ -12,10 +12,14 @@ import java.util.Map;
 @Getter
 public class ContentData {
 
-    private Map<String, String> data = new LinkedHashMap<>();
+    private final Map<String, String> data = new LinkedHashMap<>();
 
     public Map<String, String> getData() {
         return this.data;
+    }
+
+    public String get(String name) {
+        return this.data.get(name);
     }
 
     public void setData(String name, String value) {

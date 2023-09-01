@@ -15,7 +15,7 @@ public class Index {
     private String attribution;
     private String description;
     private String title;
-    private Boolean sequenced;
+    private boolean sequenced;
     private String url;
     private String revision;
     private FrequencyMode frequencyMode;

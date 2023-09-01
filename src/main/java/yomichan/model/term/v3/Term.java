@@ -46,7 +46,7 @@ public class Term {
      * </ul>
      * An empty string corresponds to words which aren't inflected, such as nouns.
      */
-    private List<String> inflections = new ArrayList<>();
+    private List<String> rules = new ArrayList<>();
 
     /**
      * Score used to determine popularity. Negative values are more rare and positive

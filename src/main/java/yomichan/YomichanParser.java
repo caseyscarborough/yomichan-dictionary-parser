@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
+import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
 import yomichan.model.tag.v3.Tag;
@@ -45,6 +46,10 @@ public class YomichanParser {
 
     private final ObjectMapper mapper;
 
+    public YomichanParser() {
+        this(new ObjectMapper());
+    }
+
     /**
      * Parse the Yomichan dictionary .zip file.
      *
@@ -57,7 +62,7 @@ public class YomichanParser {
         final String tmp = FileUtils.getTempFolder();
         final File file = getFile(path);
         try (final ZipFile zip = new ZipFile(file)) {
-            log.debug("Extracting Yomichan dictionary to {}", tmp);
+            log.debug("Extracting Yomichan dictionary {} to {}", file.getName(), tmp);
             zip.extractAll(tmp);
 
             // Parse the index, term_bank, and tag_bank JSON files.
@@ -78,7 +83,7 @@ public class YomichanParser {
             return dictionary;
         } catch (Exception e) {
             log.error("Couldn't parse Yomichan dictionary at path {}", path, e);
-            throw new IllegalStateException("Failed to parse Yomichan dictionary at path " + path, e);
+            throw new YomichanException("Failed to parse Yomichan dictionary at path " + path, e);
         } finally {
             getFiles(tmp, (dir, name) -> name.endsWith(".json"))
                 .stream()
@@ -114,7 +119,7 @@ public class YomichanParser {
             log.debug("Successfully parsed Yomichan index file in {}ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
             return index;
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to parse Yomichan index at path " + file.getAbsolutePath(), e);
+            throw new YomichanException("Failed to parse Yomichan index at path " + file.getAbsolutePath(), e);
         }
     }
 
@@ -143,7 +148,7 @@ public class YomichanParser {
         try {
             final JsonNode node = mapper.readTree(file);
             if (!node.isArray()) {
-                throw new IllegalStateException("Yomichan tag bank should be an array.");
+                throw new YomichanException("Yomichan tag bank should be an array.");
             }
 
             log.info("Parsing Yomichan tag bank at path {}", file.getAbsolutePath());
@@ -153,7 +158,7 @@ public class YomichanParser {
             log.debug("Successfully parsed {} tags in {}ms", tags.size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
             return tags;
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to parse Yomichan tag bank at path " + file.getAbsolutePath(), e);
+            throw new YomichanException("Failed to parse Yomichan tag bank at path " + file.getAbsolutePath(), e);
         }
     }
 
@@ -182,7 +187,7 @@ public class YomichanParser {
         try {
             final JsonNode node = mapper.readTree(file);
             if (!node.isArray()) {
-                throw new IllegalStateException("Yomichan term bank should be an array.");
+                throw new YomichanException("Yomichan term bank should be an array.");
             }
 
             log.info("Parsing Yomichan term bank at path {}", file.getAbsolutePath());
@@ -192,7 +197,7 @@ public class YomichanParser {
             log.debug("Successfully parsed {} terms in {}ms", terms.size(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
             return terms;
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to parse Yomichan term bank at path " + file.getAbsolutePath(), e);
+            throw new YomichanException("Failed to parse Yomichan term bank at path " + file.getAbsolutePath(), e);
         }
     }
 
@@ -211,7 +216,7 @@ public class YomichanParser {
 
     private Term parseTerm(JsonNode node) {
         if (!node.isArray()) {
-            throw new IllegalStateException("Yomichan term bank array items should start with an array.");
+            throw new YomichanException("Yomichan term bank array items should start with an array.");
         }
         final Term term = new Term();
         for (int i = 0; i < node.size(); i++) {
@@ -220,13 +225,13 @@ public class YomichanParser {
                 case 0 -> term.setTerm(getText(item));
                 case 1 -> term.setReading(getText(item));
                 case 2 -> term.setDefinitionTags(parseTags(item));
-                case 3 -> term.setInflections(parseTags(item));
+                case 3 -> term.setRules(parseTags(item));
                 case 4 -> term.setScore(getInt(item));
                 case 5 -> term.setDefinitions(parseContents(item));
                 case 6 -> term.setSequenceNumber(getInt(item));
                 case 7 -> term.setTermTags(parseTags(item));
                 default ->
-                    throw new IllegalStateException("Couldn't parse term due to invalid length. Yomichan term array should be 8 items long: " + node);
+                    throw new YomichanException("Couldn't parse term due to invalid length. Yomichan term array should be 8 items long: " + node);
             }
         }
         return term;
@@ -234,7 +239,7 @@ public class YomichanParser {
 
     private Tag parseTag(JsonNode node) {
         if (!node.isArray()) {
-            throw new IllegalStateException("Yomichan tag bank array items should start with an array.");
+            throw new YomichanException("Yomichan tag bank array items should start with an array.");
         }
         Tag tag = new Tag();
         for (int i = 0; i < node.size(); i++) {
@@ -246,7 +251,7 @@ public class YomichanParser {
                 case 3 -> tag.setNotes(getText(n));
                 case 4 -> tag.setScore(getInt(n));
                 default ->
-                    throw new IllegalStateException("Couldn't parse tag due to invalid length. Yomichan tag array should be 5 items long: " + node);
+                    throw new YomichanException("Couldn't parse tag due to invalid length. Yomichan tag array should be 5 items long: " + node);
             }
         }
         return tag;
@@ -255,7 +260,7 @@ public class YomichanParser {
     private File getFile(final String path) {
         final File file = new File(path);
         if (!file.exists()) {
-            throw new IllegalArgumentException("File does not exist at path " + path);
+            throw new YomichanException("File does not exist at path " + path);
         }
         return file;
     }
@@ -277,7 +282,7 @@ public class YomichanParser {
         switch (node.getNodeType()) {
             case STRING -> parseContentString(content, node);
             case OBJECT -> parseContentObject(content, node);
-            default -> throw new IllegalStateException("Content node should only be a string or object: " + node);
+            default -> throw new YomichanException("Content node should only be a string or object: " + node);
         }
         log.trace("Done parsing {} content", content.getType().getValue());
         return content;
@@ -299,7 +304,7 @@ public class YomichanParser {
                 content.setDescription(getText(node, "description"));
             }
             case STRUCTURED_CONTENT -> parseStructuredContent(content, node.get("content"));
-            default -> throw new IllegalStateException("Unimplemented Yomichan content type: " + contentType);
+            default -> throw new YomichanException("Unimplemented Yomichan content type: " + contentType);
         }
     }
 
@@ -309,7 +314,7 @@ public class YomichanParser {
             case STRING -> root.setText(node.asText());
             case ARRAY -> node.forEach(n -> parseStructuredContent(root, n));
             case OBJECT -> root.getContent().add(parseStructuredContentObject(node));
-            default -> throw new IllegalStateException("Unexpected node type in Term Structured Content: " + node);
+            default -> throw new YomichanException("Unexpected node type in Term Structured Content: " + node);
         }
     }
 
@@ -348,7 +353,7 @@ public class YomichanParser {
                 content.setHref(getText(node, "href"));
                 content.setLang(getText(node, "lang"));
             }
-            default -> throw new IllegalStateException("Unimplemented tag in Term Structured Content: " + node);
+            default -> throw new YomichanException("Unimplemented tag in Term Structured Content: " + node);
         }
         return content;
     }
@@ -359,7 +364,7 @@ public class YomichanParser {
             case STRING -> style.getTextDecorationLine().add(TextDecorationLine.from(tdl.asText()));
             case ARRAY -> tdl.forEach(t -> parseTextDecorationLine(style, t));
             default ->
-                throw new IllegalStateException("Only expecting string or array for textDecorationLine in Yomichan structured content style: " + tdl);
+                throw new YomichanException("Only expecting string or array for textDecorationLine in Yomichan structured content style: " + tdl);
         }
     }
 

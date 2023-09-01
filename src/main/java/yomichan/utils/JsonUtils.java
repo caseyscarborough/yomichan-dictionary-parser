@@ -9,6 +9,7 @@ public class JsonUtils {
     public static String getText(JsonNode node) {
         return node != null ? node.asText() : null;
     }
+
     public static String getText(JsonNode node, String fieldName) {
         return getText(node, fieldName, null);
     }
@@ -17,7 +18,8 @@ public class JsonUtils {
         if (node == null || !node.has(fieldName)) {
             return defaultValue;
         }
-        return node.get(fieldName).asText();
+        final String value = node.get(fieldName).asText();
+        return value != null ? value : defaultValue;
     }
 
     public static boolean getBoolean(JsonNode node, String fieldName) {
@@ -28,7 +30,8 @@ public class JsonUtils {
         if (node == null || !node.has(fieldName)) {
             return defaultValue;
         }
-        return node.get(fieldName).asBoolean();
+        final JsonNode field = node.get(fieldName);
+        return field.asText() != null ? field.asBoolean() : defaultValue;
     }
 
     public static Double getDouble(JsonNode node, String fieldName) {
@@ -39,11 +42,18 @@ public class JsonUtils {
         if (node == null || !node.has(fieldName)) {
             return defaultValue;
         }
-        return node.get(fieldName).asDouble();
+
+        final JsonNode field = node.get(fieldName);
+        if (field.asText() == null) {
+            // Can't use ternary operator because it attempts to
+            // unbox the default value throwing an NPE when it's null.
+            return defaultValue;
+        }
+        return field.asDouble();
     }
 
     public static Integer getInt(JsonNode node) {
-        return getInt(node, null);
+        return node != null && node.asText() != null ? node.asInt() : null;
     }
 
     public static Integer getInt(JsonNode node, String fieldName) {
@@ -54,6 +64,12 @@ public class JsonUtils {
         if (node == null || !node.has(fieldName)) {
             return defaultValue;
         }
-        return node.get(fieldName).asInt();
+        final JsonNode field = node.get(fieldName);
+        // Can't use ternary operator because it attempts to
+        // unbox the default value throwing an NPE when it's null.
+        if (field.asText() == null) {
+            return defaultValue;
+        }
+        return field.asInt();
     }
 }

@@ -1,4 +1,3 @@
-
 package yomichan.model.term.v3;
 
 import lombok.Getter;

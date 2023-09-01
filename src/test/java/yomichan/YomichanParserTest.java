@@ -3,9 +3,14 @@ package yomichan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
 import yomichan.model.tag.v3.Tag;
+import yomichan.model.term.v3.Content;
+import yomichan.model.term.v3.ContentType;
+import yomichan.model.term.v3.HtmlTag;
+import yomichan.model.term.v3.StructuredContent;
 import yomichan.model.term.v3.Term;
 
 import java.io.File;
@@ -15,12 +20,15 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class YomichanParserTest {
 
+    private static final String FILES_ROOT = "src/test/resources/yomichan";
     private YomichanParser parser;
 
     @BeforeEach
@@ -42,7 +50,7 @@ class YomichanParserTest {
     }
 
     @Test
-    void testParseTermBank() {
+    void testParseTerms() {
         for (File file : getFiles((dir, name) -> name.startsWith("term_bank"))) {
             final List<Term> terms = parser.parseTerms(file.getAbsolutePath());
             assertFalse(terms.isEmpty());
@@ -50,8 +58,8 @@ class YomichanParserTest {
     }
 
     @Test
-    void testParseTagBank() {
-        for (File file: getFiles((dir, name) -> name.startsWith("tag_bank"))) {
+    void testParseTags() {
+        for (File file : getFiles((dir, name) -> name.startsWith("tag_bank"))) {
             final List<Tag> tags = parser.parseTags(file.getAbsolutePath());
             assertFalse(tags.isEmpty());
         }
@@ -67,8 +75,111 @@ class YomichanParserTest {
         }
     }
 
+    @Test
+    void testParseSingleIndex() {
+        File file = new File(FILES_ROOT + "/index.json");
+        final Index index = parser.parseIndex(file);
+        assertNotNull(index);
+        assertEquals(3, index.getFormat());
+        assertEquals(3, index.getVersion());
+        assertEquals("yomichan-import", index.getAuthor());
+        assertEquals("JMdict Extra", index.getTitle());
+        assertEquals("https://github.com/FooSoft/yomichan-import", index.getUrl());
+        assertEquals("This publication has included material from the JMdict (EDICT, etc.) dictionary files in accordance with the licence provisions of the Electronic Dictionaries Research Group. See http://www.edrdg.org/", index.getAttribution());
+        assertEquals("JMdict Extra Description", index.getDescription());
+        assertEquals("JMdict.2023-01-29", index.getRevision());
+        assertTrue(index.isSequenced());
+    }
+
+    @Test
+    void testParseSingleTag() {
+        File file = new File(FILES_ROOT + "/tag_bank_1.json");
+        final List<Tag> tags = parser.parseTags(file);
+        assertFalse(tags.isEmpty());
+        assertEquals(312, tags.size());
+
+        // ["arch","archaism",-4,"archaic",3]
+        final Tag tag = tags.stream().filter(t -> t.getName().equals("arch")).findFirst().orElseThrow(() -> new IllegalStateException("Could not find expected tag in tag_bank_1.json"));
+        assertEquals("arch", tag.getName());
+        assertEquals("archaism", tag.getCategory());
+        assertEquals(-4, tag.getOrder());
+        assertEquals("archaic", tag.getNotes());
+        assertEquals(3, tag.getScore());
+    }
+
+    @Test
+    void testParseSingleTerm() {
+        File file = new File(FILES_ROOT + "/term_bank_1.json");
+        final List<Term> terms = parser.parseTerms(file);
+        assertFalse(terms.isEmpty());
+        assertEquals(158, terms.size());
+
+        // Test parsing a basic term
+        Term term = terms.get(0);
+        assertEquals("引き合わせる", term.getTerm());
+        assertEquals("ひきあわせる", term.getReading());
+        assertNotNull(term.getDefinitionTags());
+        assertEquals(1, term.getDefinitionTags().size());
+        assertEquals("forms", term.getDefinitionTags().get(0));
+        assertNotNull(term.getRules());
+        assertEquals(1, term.getRules().size());
+        assertEquals("v1", term.getRules().get(0));
+        assertEquals(4, term.getDefinitions().size());
+        Content content = term.getDefinitions().get(0);
+        assertEquals(ContentType.TEXT, content.getType());
+        assertEquals("引き合わせる", content.getText());
+        assertEquals(-203, term.getScore());
+        assertEquals(1601510, term.getSequenceNumber());
+        assertNotNull(term.getTermTags());
+        assertTrue(term.getTermTags().isEmpty());
+
+        // Test parsing a term with structured content
+        term = terms.get(13);
+        assertEquals("引き受ける", term.getTerm());
+        assertEquals("ひきうける", term.getReading());
+        final List<String> tags = term.getDefinitionTags();
+        assertNotNull(tags);
+        assertEquals(3, tags.size());
+        assertEquals("1", tags.get(0));
+        assertEquals("v1", tags.get(1));
+        assertEquals("vt", tags.get(2));
+        assertEquals(1, term.getRules().size());
+        assertEquals("v1", term.getRules().get(0));
+        assertEquals(1999800, term.getScore());
+        List<Content> definitions = term.getDefinitions();
+        assertNotNull(definitions);
+        assertEquals(1, definitions.size());
+        content = definitions.get(0);
+        assertNotNull(content);
+        assertEquals(ContentType.STRUCTURED_CONTENT, content.getType());
+        assertNotNull(content.getContent());
+        assertEquals(2, content.getContent().size());
+        List<StructuredContent> contents = content.getContent();
+        final StructuredContent a = contents.get(0);
+        assertNotNull(a.getContent());
+        assertEquals(5, a.getContent().size());
+        assertEquals("to take on", a.getContent().get(0).getText());
+        assertEquals(HtmlTag.LI, a.getContent().get(0).getTag());
+        assertEquals("to assume responsibility for", a.getContent().get(4).getText());
+        assertEquals(HtmlTag.LI, a.getContent().get(4).getTag());
+        assertEquals("glossary", a.getData().get("content"));
+        assertEquals("en", a.getLang());
+        assertEquals("circle", a.getStyle().getListStyleType());
+        assertEquals(HtmlTag.UL, a.getTag());
+        assertEquals(1601520, term.getSequenceNumber());
+        assertEquals(3, term.getTermTags().size());
+        assertEquals("⭐", term.getTermTags().get(0));
+        assertEquals("ichi", term.getTermTags().get(1));
+        assertEquals("news19k", term.getTermTags().get(2));
+    }
+
+    @Test
+    void testParseTermWhenFileNotFound() {
+        assertThrows(YomichanException.class, () -> parser.parseTerms("does_not_exist.json"));
+    }
+
     private List<File> getFiles(FilenameFilter filter) {
-        File file = new File("src/test/resources/yomichan");
+        File file = new File(FILES_ROOT);
         final File[] files = file.listFiles(filter);
         if (files == null) {
             return new ArrayList<>();
