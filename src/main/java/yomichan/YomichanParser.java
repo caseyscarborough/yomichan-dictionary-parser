@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
 import yomichan.model.v3.Kanji;
+import yomichan.model.v3.KanjiMetadata;
 import yomichan.model.v3.Tag;
 import yomichan.model.v3.Term;
 import yomichan.model.v3.TermMetadata;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 import static yomichan.parser.YomichanParserType.DICTIONARY;
 import static yomichan.parser.YomichanParserType.INDEX;
 import static yomichan.parser.YomichanParserType.KANJI;
+import static yomichan.parser.YomichanParserType.KANJI_METADATA;
 import static yomichan.parser.YomichanParserType.TAG;
 import static yomichan.parser.YomichanParserType.TERM;
 import static yomichan.parser.YomichanParserType.TERM_METADATA;
@@ -226,5 +228,32 @@ public class YomichanParser {
     public List<TermMetadata> parseTermMetadata(String path) {
         final File file = getFile(path);
         return parseTermMetadata(file);
+    }
+
+    /**
+     * Parse the kanji_meta_bank.json file.
+     *
+     * @param path The path to the kanji_meta_bank.json file.
+     * @return The parsed kanji metadata entries.
+     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-kanji-meta-bank-v3-schema.json">Kanji Meta Bank v3 JSON Schema</a>
+     * @see KanjiMetadata
+     */
+    public List<KanjiMetadata> parseKanjiMetadata(String path) {
+        final File file = getFile(path);
+        return parseKanjiMetadata(file);
+    }
+
+    /**
+     * Parse the kanji_meta_bank.json file.
+     *
+     * @param file The kanji_meta_bank.json file.
+     * @return The parsed kanji metadata entries.
+     * @see <a href="https://github.com/FooSoft/yomichan/blob/master/ext/data/schemas/dictionary-kanji-meta-bank-v3-schema.json">Kanji Meta Bank v3 JSON Schema</a>
+     * @see KanjiMetadata
+     */
+    @SuppressWarnings("unchecked")
+    public List<KanjiMetadata> parseKanjiMetadata(File file) {
+        IYomichanParser<List<KanjiMetadata>> parser = parsers.get(KANJI_METADATA);
+        return parser.parse(file);
     }
 }
