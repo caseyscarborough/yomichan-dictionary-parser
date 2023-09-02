@@ -6,6 +6,7 @@ import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
 import yomichan.model.v3.Kanji;
+import yomichan.model.v3.KanjiMetadata;
 import yomichan.model.v3.Tag;
 import yomichan.model.v3.Term;
 import yomichan.model.v3.TermMetadata;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static yomichan.parser.YomichanParserType.DICTIONARY;
 import static yomichan.parser.YomichanParserType.INDEX;
 import static yomichan.parser.YomichanParserType.KANJI;
+import static yomichan.parser.YomichanParserType.KANJI_METADATA;
 import static yomichan.parser.YomichanParserType.TAG;
 import static yomichan.parser.YomichanParserType.TERM;
 
@@ -90,6 +92,14 @@ class YomichanParserTest {
                     dictionary.getTermMetadata().forEach(meta -> assertEquals(TermMetadata.Type.FREQUENCY, meta.getType()));
                 }
             }
+        }
+    }
+
+    @Test
+    void testParseKanjiMetadata() {
+        for (File file : getFiles(KANJI_METADATA)) {
+            final List<KanjiMetadata> meta = parser.parseKanjiMetadata(file.getAbsolutePath());
+            assertFalse(meta.isEmpty());
         }
     }
 
