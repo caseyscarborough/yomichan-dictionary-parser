@@ -76,9 +76,17 @@ YomichanDictionaryType type = dictionary.getType();
 // This will be populated with then type is TERM
 List<Term> terms = dictionary.getTerms();
 
+// The metadata parsed from the term_meta_bank.json files within the dictionary.
+// This will be populated when the type is FREQUENCY or PITCH.
+List<TermMetadata> metadata = dictionary.getTermMetadata();
+
 // The kanji parsed from the kanji_bank.json files within the dictionary.
 // This will be populated with the type is KANJI
 List<Kanji> kanjis = dictionary.getKanjis();
+
+// The metadata parsed from the kanji_meta_bank.json files within the dictionary.
+// This will be populated when the type is KANJI_FREQUENCY.
+List<KanjiMetadata> metadata = dictionary.getKanjiMetadata();
 
 // The tags parsed from the tag_bank.json files within the dictionary.
 List<Tag> tags = dictionary.getTags();
@@ -315,10 +323,10 @@ or the [`Kanji` class](https://github.com/caseyscarborough/yomichan-dictionary-p
 ## TODO
 
 - [x] Implement `index.json` files
-- [ ] Implement `term_bank.json` files for version 1
 - [x] Implement `term_bank.json` files for version 3
+- [x] Implement `term_meta_bank.json` files
 - [x] Implement `tag_bank.json` files
-- [ ] Implement `meta_bank.json` files
-- [ ] Implement `kanji_bank.json` files for version 1
 - [x] Implement `kanji_bank.json` files for version 3
-- [ ] Implement `kanji_meta_bank.json` files for version 3
+- [x] Implement `kanji_meta_bank.json` files for version 3
+- [ ] Implement `kanji_bank.json` files for version 1
+- [ ] Implement `term_bank.json` files for version 1
