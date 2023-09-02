@@ -6,6 +6,7 @@ import yomichan.exception.YomichanException;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
 import yomichan.model.v3.Kanji;
+import yomichan.model.v3.KanjiMetadata;
 import yomichan.model.v3.Tag;
 import yomichan.model.v3.Term;
 import yomichan.model.v3.TermMetadata;
@@ -21,9 +22,10 @@ import java.util.stream.Collectors;
 import static yomichan.parser.YomichanParserType.DICTIONARY;
 import static yomichan.parser.YomichanParserType.INDEX;
 import static yomichan.parser.YomichanParserType.KANJI;
+import static yomichan.parser.YomichanParserType.KANJI_METADATA;
 import static yomichan.parser.YomichanParserType.TAG;
 import static yomichan.parser.YomichanParserType.TERM;
-import static yomichan.parser.YomichanParserType.TERM_META;
+import static yomichan.parser.YomichanParserType.TERM_METADATA;
 import static yomichan.parser.YomichanParserType.values;
 import static yomichan.utils.FileUtils.getFiles;
 
@@ -54,7 +56,8 @@ class YomichanDictionaryParser implements IYomichanParser<YomichanDictionary> {
             this.<List<Kanji>>parse(dir, KANJI).forEach(dictionary.getKanjis()::addAll);
             this.<List<Term>>parse(dir, TERM).forEach(dictionary.getTerms()::addAll);
             this.<List<Tag>>parse(dir, TAG).forEach(dictionary.getTags()::addAll);
-            this.<List<TermMetadata>>parse(dir, TERM_META).forEach(dictionary.getTermMetadata()::addAll);
+            this.<List<TermMetadata>>parse(dir, TERM_METADATA).forEach(dictionary.getTermMetadata()::addAll);
+            this.<List<KanjiMetadata>>parse(dir, KANJI_METADATA).forEach(dictionary.getKanjiMetadata()::addAll);
 
             log.debug("Successfully parsed Yomichan {} dictionary {} in {}ms", dictionary.getType() != null ? dictionary.getType().getName() : "[Unknown]", zip.getFile().getName(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
             return dictionary;

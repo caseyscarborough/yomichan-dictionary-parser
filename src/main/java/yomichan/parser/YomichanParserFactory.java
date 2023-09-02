@@ -19,7 +19,8 @@ public class YomichanParserFactory {
             case INDEX -> (IYomichanParser<T>) new YomichanIndexParser(mapper);
             case TAG -> (IYomichanParser<T>) new YomichanTagParser(mapper);
             case TERM -> (IYomichanParser<T>) new YomichanTermParser(mapper);
-            case TERM_META -> (IYomichanParser<T>) new YomichanTermMetadataParser(mapper);
+            case TERM_METADATA -> (IYomichanParser<T>) new YomichanTermMetadataParser(mapper);
+            case KANJI_METADATA -> (IYomichanParser<T>) new YomichanKanjiMetadataParser(mapper);
             case DICTIONARY -> (IYomichanParser<T>) new YomichanDictionaryParser(this);
         };
     }

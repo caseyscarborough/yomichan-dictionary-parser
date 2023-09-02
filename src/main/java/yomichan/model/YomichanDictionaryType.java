@@ -14,6 +14,7 @@ public enum YomichanDictionaryType {
     TERM("Term"),
     KANJI("Kanji"),
     FREQUENCY("Frequency"),
+    KANJI_FREQUENCY("Kanji Frequency"),
     PITCH("Pitch Accent");
 
     private final String name;

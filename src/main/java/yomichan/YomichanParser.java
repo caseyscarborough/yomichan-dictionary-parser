@@ -1,6 +1,5 @@
 package yomichan;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import yomichan.model.Index;
 import yomichan.model.YomichanDictionary;
@@ -23,7 +22,7 @@ import static yomichan.parser.YomichanParserType.INDEX;
 import static yomichan.parser.YomichanParserType.KANJI;
 import static yomichan.parser.YomichanParserType.TAG;
 import static yomichan.parser.YomichanParserType.TERM;
-import static yomichan.parser.YomichanParserType.TERM_META;
+import static yomichan.parser.YomichanParserType.TERM_METADATA;
 import static yomichan.parser.YomichanParserType.values;
 import static yomichan.utils.FileUtils.getFile;
 
@@ -68,7 +67,7 @@ public class YomichanParser {
     private final Map<YomichanParserType, IYomichanParser> parsers;
 
     public YomichanParser() {
-        YomichanParserFactory factory = new YomichanParserFactory(new ObjectMapper());
+        final YomichanParserFactory factory = new YomichanParserFactory();
         this.parsers = Arrays.stream(values()).collect(Collectors.toMap(type -> type, factory::getInstance));
     }
 
@@ -212,7 +211,7 @@ public class YomichanParser {
      */
     @SuppressWarnings("unchecked")
     public List<TermMetadata> parseTermMetadata(File file) {
-        final IYomichanParser<List<TermMetadata>> parser = parsers.get(TERM_META);
+        final IYomichanParser<List<TermMetadata>> parser = parsers.get(TERM_METADATA);
         return parser.parse(file);
     }
 

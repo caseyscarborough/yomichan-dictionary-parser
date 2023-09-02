@@ -72,13 +72,11 @@ class YomichanTermMetadataParser implements IYomichanParser<List<TermMetadata>> 
     }
 
     private Frequency parseFrequency(JsonNode node) {
-        if (!node.isObject()) {
-            throw new YomichanException("Yomichan frequency metadata should be an object.");
-        }
-        Frequency frequency = new Frequency();
-        frequency.setValue(getInt(node, "value"));
-        frequency.setDisplay(getText(node, "displayValue"));
-        return frequency;
+        return switch (node.getNodeType()) {
+            case NUMBER -> new Frequency(getInt(node));
+            case OBJECT -> new Frequency(getInt(node, "value"), getText(node, "displayValue"));
+            default -> throw new YomichanException("Yomichan frequency metadata should be an object.");
+        };
     }
 
     private Pitches parsePitches(JsonNode node) {
