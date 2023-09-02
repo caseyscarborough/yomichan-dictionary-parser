@@ -1,6 +1,7 @@
 # <img src="https://i.imgur.com/1QgctyK.png" height="24" alt="Yomichan Logo"> Yomichan Dictionary Parser
 
 [![](https://github.com/caseyscarborough/yomichan-dictionary-parser/actions/workflows/gradle.yml/badge.svg)](https://github.com/caseyscarborough/yomichan-dictionary-parser/actions/workflows/gradle.yml)
+![](https://img.shields.io/badge/Coverage-87%25-orange)
 
 This is a library that handles parsing the [Yomichan](https://github.com/FooSoft/yomichan/) dictionary format.
 
