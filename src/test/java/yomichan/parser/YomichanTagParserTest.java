@@ -9,9 +9,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class YomichanTagParserTest {
+class YomichanTagParserTest extends BaseYomichanParserTest<List<Tag>> {
 
-    YomichanTagParser parser = new YomichanTagParser(new ObjectMapper());
+    public YomichanTagParserTest() {
+        super(YomichanParserType.TAG, new YomichanTagParser(new ObjectMapper()));
+    }
 
     @Test
     void testParse() {

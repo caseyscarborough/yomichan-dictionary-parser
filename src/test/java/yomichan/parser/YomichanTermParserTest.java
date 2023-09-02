@@ -15,9 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class YomichanTermParserTest {
+class YomichanTermParserTest extends BaseYomichanParserTest<List<Term>> {
 
-    YomichanTermParser parser = new YomichanTermParser(new ObjectMapper());
+    public YomichanTermParserTest() {
+        super(YomichanParserType.TERM, new YomichanTermParser(new ObjectMapper()));
+    }
 
     @Test
     void testParse() {

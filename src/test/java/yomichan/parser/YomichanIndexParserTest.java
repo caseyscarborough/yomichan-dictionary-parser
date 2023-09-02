@@ -8,9 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class YomichanIndexParserTest {
+class YomichanIndexParserTest extends BaseYomichanParserTest<Index> {
 
-    YomichanIndexParser parser = new YomichanIndexParser(new ObjectMapper());
+    public YomichanIndexParserTest() {
+        super(YomichanParserType.INDEX, new YomichanIndexParser(new ObjectMapper()));
+    }
 
     @Test
     void testParse() {

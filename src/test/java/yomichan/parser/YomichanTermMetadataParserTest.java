@@ -11,9 +11,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class YomichanTermMetadataParserTest {
+class YomichanTermMetadataParserTest extends BaseYomichanParserTest<List<TermMetadata>> {
 
-    YomichanTermMetadataParser parser = new YomichanTermMetadataParser(new ObjectMapper());
+    public YomichanTermMetadataParserTest() {
+        super(YomichanParserType.TERM_METADATA, new YomichanTermMetadataParser(new ObjectMapper()));
+    }
 
     @Test
     void testParseForPitch() {

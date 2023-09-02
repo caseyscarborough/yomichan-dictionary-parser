@@ -2,6 +2,7 @@ package yomichan.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import yomichan.model.v3.Kanji;
 import yomichan.model.v3.KanjiMetadata;
 
 import java.util.List;
@@ -10,9 +11,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-class YomichanKanjiMetadataParserTest {
+class YomichanKanjiMetadataParserTest extends BaseYomichanParserTest<List<KanjiMetadata>> {
 
-    YomichanKanjiMetadataParser parser = new YomichanKanjiMetadataParser(new ObjectMapper());
+    public YomichanKanjiMetadataParserTest() {
+        super(YomichanParserType.KANJI_METADATA, new YomichanKanjiMetadataParser(new ObjectMapper()));
+    }
 
     @Test
     void testParse() {

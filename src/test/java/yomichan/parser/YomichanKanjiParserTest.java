@@ -9,9 +9,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class YomichanKanjiParserTest {
+class YomichanKanjiParserTest extends BaseYomichanParserTest<List<Kanji>> {
 
-    YomichanKanjiParser parser = new YomichanKanjiParser(new ObjectMapper());
+    public YomichanKanjiParserTest() {
+        super(YomichanParserType.KANJI, new YomichanKanjiParser(new ObjectMapper()));
+    }
 
     @Test
     void testParse() {
