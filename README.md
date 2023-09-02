@@ -29,7 +29,7 @@ repositories {
 
 dependencies {
     // Specific version
-    implementation 'com.github.caseyscarborough:yomichan-dictionary-parser:<version>'
+    implementation 'com.github.caseyscarborough:yomichan-dictionary-parser:1.0.1'
     
     // Master branch (latest)
     implementation 'com.github.caseyscarborough:yomichan-dictionary-parser:master-SNAPSHOT'
