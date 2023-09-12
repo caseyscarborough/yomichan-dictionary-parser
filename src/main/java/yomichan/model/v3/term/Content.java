@@ -86,10 +86,13 @@ public class Content {
     }
 
     public String getText() {
+        if (text != null) {
+            return text;
+        }
         // Handle the case where content is a single text node
         if (contents.size() == 1 && contents.get(0).getType() == ContentType.TEXT) {
             return contents.get(0).getText();
         }
-        return text;
+        return null;
     }
 }

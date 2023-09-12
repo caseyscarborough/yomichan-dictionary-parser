@@ -121,7 +121,7 @@ class YomichanTermParser implements IYomichanParser<List<Term>> {
     private void parseStructuredContent(Content root, JsonNode node) {
         log.trace("Parsing structured content: {}", node.toString());
         switch (node.getNodeType()) {
-            case STRING -> root.getContents().add(new StructuredContent((node.asText())));
+            case STRING -> root.getContents().add(new StructuredContent(getText(node)));
             case ARRAY -> node.forEach(n -> parseStructuredContent(root, n));
             case OBJECT -> root.getContents().add(parseStructuredContentObject(node));
             default -> throw new YomichanException("Unexpected node type in Term Structured Content: " + node);
