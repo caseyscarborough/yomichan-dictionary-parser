@@ -1,6 +1,7 @@
 package yomichan.model.v3.term;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor
 public class Content {
 
     /**
@@ -78,4 +80,16 @@ public class Content {
      */
     private Boolean collapsible;
 
+    public Content(String text) {
+        this.text = text;
+        this.type = ContentType.TEXT;
+    }
+
+    public String getText() {
+        // Handle the case where content is a single text node
+        if (contents.size() == 1 && contents.get(0).getType() == ContentType.TEXT) {
+            return contents.get(0).getText();
+        }
+        return text;
+    }
 }

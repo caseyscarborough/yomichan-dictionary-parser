@@ -56,4 +56,8 @@ public class StructuredContent extends Content {
      * The URL for the link. URLs starting with a ? are treated as internal links to other dictionary content.
      */
     private String href;
+
+    public StructuredContent(String text) {
+        super(text);
+    }
 }

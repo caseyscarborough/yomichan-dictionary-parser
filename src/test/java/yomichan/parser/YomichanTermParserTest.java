@@ -85,4 +85,25 @@ class YomichanTermParserTest extends BaseYomichanParserTest<List<Term>> {
         assertEquals("ichi", term.getTermTags().get(1));
         assertEquals("news19k", term.getTermTags().get(2));
     }
+
+    @Test
+    void testParse2() {
+        final List<Term> terms = parser.parse("src/test/resources/yomichan/term_bank_48.json");
+        assertFalse(terms.isEmpty());
+
+        // Test parsing a basic term
+        Term term = terms.stream().filter(t -> t.getTerm().equals("愛着")).findFirst().orElseThrow(() -> new IllegalStateException("Term not found"));
+        assertEquals("愛着", term.getTerm());
+        assertEquals(1, term.getContents().size());
+        final Content a = term.getContents().get(0);
+        assertEquals(2, a.getContents().size());
+        final StructuredContent b = a.getContents().get(1);
+        assertEquals(1, b.getContents().size());
+        final StructuredContent c = b.getContents().get(0);
+        assertEquals(3, c.getContents().size());
+        final StructuredContent d = c.getContents().get(1);
+        assertEquals(4, d.getContents().size());
+        assertEquals("（", d.getContents().get(1).getText());
+        assertEquals("）", d.getContents().get(3).getText());
+    }
 }
