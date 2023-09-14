@@ -10,6 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class YomichanTermMetadataParserTest extends BaseYomichanParserTest<List<TermMetadata>> {
 
@@ -42,5 +43,19 @@ class YomichanTermMetadataParserTest extends BaseYomichanParserTest<List<TermMet
         final Frequency frequency = meta.getFrequency();
         assertEquals(1, frequency.getValue());
         assertEquals("1㋕", frequency.getDisplay());
+    }
+
+    @Test
+    void testParseForFrequencyWithReading() {
+        final List<TermMetadata> metas = parser.parse("src/test/resources/yomichan/term_meta_bank_3.json");
+        assertFalse(metas.isEmpty());
+        assertEquals(1, metas.size());
+
+        for (TermMetadata meta : metas) {
+            assertNotNull(meta.getFrequency());
+            assertNotNull(meta.getFrequency().getReading());
+            assertNotNull(meta.getFrequency().getValue());
+            assertNotNull(meta.getFrequency().getDisplay());
+        }
     }
 }

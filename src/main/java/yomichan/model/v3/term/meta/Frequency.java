@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 public class Frequency {
 
     /**
+     * The reading for the frequency (optional).
+     */
+    private String reading;
+
+    /**
      * The frequency value.
      */
     private Integer value;
